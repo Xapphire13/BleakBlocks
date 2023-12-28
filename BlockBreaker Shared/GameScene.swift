@@ -58,10 +58,7 @@ class GameScene: SKScene {
     }
     
     func removeBlock(_ block: Block) {
-        // Animate removal
-        let fadeOutAction = SKAction.fadeOut(withDuration: 0.5)
-        let removeAction = SKAction.removeFromParent()
-        block.run(SKAction.sequence([fadeOutAction, removeAction]))
+        block.removeFromParent()
 
         // Update game state (remove block from the array)
         if let rowIndex = blocks.firstIndex(where: { $0.contains(block) }) {
@@ -76,6 +73,51 @@ class GameScene: SKScene {
         let group = self.findGroup(block)
         group.forEach { block in
             self.removeBlock(block)
+        }
+    }
+    
+    func shiftBlocks() {
+        var areBlocksFalling = false
+        for col in 0..<GAME_SIZE {
+            var emptyIndex: Int? = nil
+            for row in 0..<GAME_SIZE {
+                if self.blocks[row][col] == nil {
+                    emptyIndex = row
+                    break
+                }
+            }
+            
+            if var emptyIndex = emptyIndex {
+                for row in emptyIndex+1..<GAME_SIZE {
+                    if let block = self.blocks[row][col] {
+                        areBlocksFalling = true
+                        block.run(SKAction.moveTo(y: CGFloat(emptyIndex) * 50 + CGFloat(emptyIndex), duration: 0.2))
+                        self.blocks[row][col] = nil
+                        self.blocks[emptyIndex][col] = block
+                        
+                        emptyIndex += 1
+                    }
+                }
+            }
+        }
+        
+        run(SKAction.wait(forDuration: areBlocksFalling ? 0.2 : 0.0)) {
+            for leftCol in 0..<self.GAME_SIZE {
+                if self.blocks[0][leftCol] == nil {
+                    for rightCol in leftCol+1..<self.GAME_SIZE {
+                        if self.blocks[0][rightCol] != nil {
+                            for row in 0..<self.GAME_SIZE {
+                                if let block = self.blocks[row][rightCol] {
+                                    block.run(SKAction.moveTo(x: CGFloat(leftCol) * 50 + CGFloat(leftCol), duration: 0.2))
+                                    self.blocks[row][rightCol] = nil
+                                    self.blocks[row][leftCol] = block
+                                }
+                            }
+                            break
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -171,6 +213,26 @@ extension GameScene {
         if let block = node as? Block {
             // Handle block selection and removal
             self.selectAndRemoveBlocks(startingFrom: block)
+            self.shiftBlocks()
+            
+            var isGameOver = true
+            for row in self.blocks {
+                for block in row {
+                    if block != nil {
+                        isGameOver = false
+                        break
+                    }
+                }
+                
+                if !isGameOver {
+                    break;
+                }
+            }
+            
+            if isGameOver {
+                self.blocks = []
+                self.setupGame()
+            }
         }
     }
     
