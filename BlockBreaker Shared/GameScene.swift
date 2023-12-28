@@ -26,6 +26,13 @@ class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         self.setupGame()
+        let trackingArea = NSTrackingArea(
+            rect: view.frame,
+            options: [.activeInKeyWindow, .mouseMoved],
+            owner: self,
+            userInfo: nil
+        )
+        view.addTrackingArea(trackingArea)
     }
 
     func setupGame() {
@@ -37,8 +44,7 @@ class GameScene: SKScene {
                 
                 let block = Block(
                     color: color,
-                    size: blockSize,
-                    coordinate: CGPoint(x: col, y: row)
+                    size: blockSize
                 )
                 block.position = CGPoint(x: col + col * Int(blockSize.width), y: row + row * Int(blockSize.height))
                 block.name = "block\(row)_\(col)"
@@ -73,10 +79,6 @@ class GameScene: SKScene {
         }
     }
     
-    func removeAndShiftBlocks(selectedBlocks: [Block]) {
-        // Implement block removal and column shifting logic
-    }
-    
     func findGroup(_ block: Block) -> [Block] {
         var group: Set<Block> = []
         
@@ -85,18 +87,29 @@ class GameScene: SKScene {
         return Array(group)
     }
     
+    func findCoordinate(_ block: Block) -> CGPoint {
+        if let rowIndex = blocks.firstIndex(where: { $0.contains(block) }) {
+            if let colIndex = blocks[rowIndex].firstIndex(of: block) {
+                return CGPoint(x: rowIndex, y: colIndex)
+            }
+        }
+        
+        return CGPoint()
+    }
+    
     func checkNeighbors(_ block: Block, group: inout Set<Block>) {
         if (group.contains(block)) {
             return
         }
         
         group.insert(block)
-        let (col, row) = (Int(block.coordinate.x), Int(block.coordinate.y))
+        let coordinate = self.findCoordinate(block)
+        let (row, col) =  (Int(coordinate.x), Int(coordinate.y))
         
         // Left
         if col >= 1 {
             if let leftBlock = self.blocks[row][col - 1] {
-                if leftBlock.color == block.color {
+                if leftBlock.originalColor == block.originalColor {
                     self.checkNeighbors(leftBlock, group: &group)
                 }
             }
@@ -105,7 +118,7 @@ class GameScene: SKScene {
         // Right
         if col < GAME_SIZE - 1 {
             if let rightBlock = self.blocks[row][col + 1] {
-                if rightBlock.color == block.color {
+                if rightBlock.originalColor == block.originalColor {
                     self.checkNeighbors(rightBlock, group: &group)
                 }
             }
@@ -114,7 +127,7 @@ class GameScene: SKScene {
         // Up
         if row < GAME_SIZE - 1 {
             if let upperBlock = self.blocks[row + 1][col] {
-                if upperBlock.color == block.color {
+                if upperBlock.originalColor == block.originalColor {
                     self.checkNeighbors(upperBlock, group: &group)
                 }
             }
@@ -123,7 +136,7 @@ class GameScene: SKScene {
         // Down
         if row >= 1 {
             if let lowerBlock = self.blocks[row - 1][col] {
-                if lowerBlock.color == block.color {
+                if lowerBlock.originalColor == block.originalColor {
                     self.checkNeighbors(lowerBlock, group: &group)
                 }
             }
@@ -154,22 +167,30 @@ extension GameScene {
     override func mouseUp(with event: NSEvent) {
         let location = event.location(in: self)
         let node = atPoint(location)
-
+        
         if let block = node as? Block {
             // Handle block selection and removal
             self.selectAndRemoveBlocks(startingFrom: block)
         }
     }
     
-    override func mouseEntered(with event: NSEvent) {
-        let location = event.location(in: self)
-        let node = atPoint(location)
-
-        if let block = node as? Block {
-            // Show hightlight on block and adjacent blocks of the same group
-            let group = self.findGroup(block)
-        }
-    }
+//    override func mouseMoved(with event: NSEvent) {
+//        let location = event.location(in: self)
+//        let node = atPoint(location)
+//        
+//        if let block = node as? Block {
+//            let group = self.findGroup(block)
+//            group.forEach { block in
+//                block.highlight()
+//            }
+//        } else {
+//            self.blocks.forEach { row in
+//                row.forEach { block in
+//                    block?.unhighlight()
+//                }
+//            }
+//        }
+//    }
 }
 #endif
 
