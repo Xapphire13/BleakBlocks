@@ -6,8 +6,10 @@
 import SpriteKit
 
 class GameScene: SKScene {
-    var blocks: [[Block]] = []
+    var blocks: [[Block?]] = []
     let blockSize = CGSize(width: 50, height: 50)
+    let GAME_SIZE = 5
+    let COLORS = [SKColor.magenta, SKColor.green, SKColor.blue]
 
     class func newGameScene() -> GameScene {
         // Load 'GameScene.sks' as an SKScene.
@@ -27,12 +29,14 @@ class GameScene: SKScene {
     }
 
     func setupGame() {
-        for row in 0..<5 {
+        for row in 0..<GAME_SIZE {
             var rowBlocks: [Block] = []
 
-            for col in 0..<5 {
+            for col in 0..<GAME_SIZE {
+                let color = COLORS[Int.random(in: 0..<COLORS.count)]
+                
                 let block = Block(
-                    color: SKColor.magenta,
+                    color: color,
                     size: blockSize,
                     coordinate: CGPoint(x: col, y: row)
                 )
@@ -54,20 +58,77 @@ class GameScene: SKScene {
         block.run(SKAction.sequence([fadeOutAction, removeAction]))
 
         // Update game state (remove block from the array)
-        if let index = blocks.firstIndex(where: { $0.contains(block) }) {
-            blocks[index].removeAll { $0 == block }
+        if let rowIndex = blocks.firstIndex(where: { $0.contains(block) }) {
+            if let colIndex = blocks[rowIndex].firstIndex(of: block) {
+                blocks[rowIndex][colIndex] = nil
+            }
         }
     }
 
 
     func selectAndRemoveBlocks(startingFrom block: Block) {
-        self.removeBlock(block)
+        let group = self.findGroup(block)
+        group.forEach { block in
+            self.removeBlock(block)
+        }
     }
     
     func removeAndShiftBlocks(selectedBlocks: [Block]) {
         // Implement block removal and column shifting logic
     }
     
+    func findGroup(_ block: Block) -> [Block] {
+        var group: Set<Block> = []
+        
+        self.checkNeighbors(block, group: &group)
+        
+        return Array(group)
+    }
+    
+    func checkNeighbors(_ block: Block, group: inout Set<Block>) {
+        if (group.contains(block)) {
+            return
+        }
+        
+        group.insert(block)
+        let (col, row) = (Int(block.coordinate.x), Int(block.coordinate.y))
+        
+        // Left
+        if col >= 1 {
+            if let leftBlock = self.blocks[row][col - 1] {
+                if leftBlock.color == block.color {
+                    self.checkNeighbors(leftBlock, group: &group)
+                }
+            }
+        }
+        
+        // Right
+        if col < GAME_SIZE - 1 {
+            if let rightBlock = self.blocks[row][col + 1] {
+                if rightBlock.color == block.color {
+                    self.checkNeighbors(rightBlock, group: &group)
+                }
+            }
+        }
+        
+        // Up
+        if row < GAME_SIZE - 1 {
+            if let upperBlock = self.blocks[row + 1][col] {
+                if upperBlock.color == block.color {
+                    self.checkNeighbors(upperBlock, group: &group)
+                }
+            }
+        }
+        
+        // Down
+        if row >= 1 {
+            if let lowerBlock = self.blocks[row - 1][col] {
+                if lowerBlock.color == block.color {
+                    self.checkNeighbors(lowerBlock, group: &group)
+                }
+            }
+        }
+    }
 }
 
 #if os(iOS) || os(tvOS)
@@ -97,6 +158,16 @@ extension GameScene {
         if let block = node as? Block {
             // Handle block selection and removal
             self.selectAndRemoveBlocks(startingFrom: block)
+        }
+    }
+    
+    override func mouseEntered(with event: NSEvent) {
+        let location = event.location(in: self)
+        let node = atPoint(location)
+
+        if let block = node as? Block {
+            // Show hightlight on block and adjacent blocks of the same group
+            let group = self.findGroup(block)
         }
     }
 }
