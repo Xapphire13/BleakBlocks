@@ -6,3 +6,4 @@ publish = false
 
 [dependencies]
 macroquad = "0.4.14"
+palette = "0.7.6"
