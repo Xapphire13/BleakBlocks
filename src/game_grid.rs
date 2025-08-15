@@ -182,6 +182,24 @@ impl GameGrid {
             self.blocks[row as usize][col as usize] = None;
         }
     }
+
+    /// Returns true if there are gaps in the grid (i.e. blocks have been removed and need to be rearranged)
+    pub fn has_gaps(&self) -> bool {
+        for col in 0..self.cols {
+            let mut found_gap = false;
+
+            for row in (0..self.rows).rev() {
+                if self.blocks[row as usize][col as usize].is_none() {
+                    found_gap = true;
+                } else if found_gap {
+                    // We encountered a block after a gap (the block needs to fall)
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
 }
 
 impl HasBounds for GameGrid {

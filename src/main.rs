@@ -24,6 +24,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    let mut game_state = GameState::Playing;
     let mut fps_limiter = FpsLimiter::new(60.0);
     let grid_size = screen_width().min(screen_height()) - 2. * GRID_MARGIN;
     let mut grid = GameGrid::new(GRID_MARGIN, GRID_MARGIN, grid_size, grid_size, 10, 10);
@@ -31,22 +32,37 @@ async fn main() {
     loop {
         clear_background(Color::from_hex(BACKGROUND_COLOR));
 
-        // Update hover state
-        let (mouse_x, mouse_y) = mouse_position();
+        // -----
+        // Frame state
+        // -----
+        let mut hovered_blocks = HashSet::new();
 
-        // Remove blocks when clicked
-        if is_mouse_button_down(MouseButton::Left) {
-            grid.remove_block_region(mouse_x, mouse_y);
+        // ---------
+        // Animation
+        // ---------
+        if let GameState::BlocksFalling = game_state {}
+
+        // -------------------
+        // Handle player input
+        // -------------------
+
+        if let GameState::Playing = game_state {
+            let (mouse_x, mouse_y) = mouse_position();
+            // Remove blocks when clicked
+            if is_mouse_button_down(MouseButton::Left) {
+                grid.remove_block_region(mouse_x, mouse_y);
+            }
+
+            if let Some(block) = grid.get_block_at_pixel_position(mouse_x, mouse_y) {
+                hovered_blocks = grid.get_block_region(block)
+            };
         }
 
-        let hovered_blocks = if let Some(block) = grid.get_block_at_pixel_position(mouse_x, mouse_y)
-        {
-            grid.get_block_region(block)
-        } else {
-            HashSet::new()
-        };
+        // ---------
+        // Rendering
+        // ---------
 
-        // Draw game
+        // Render blocks
         for block in grid.blocks.iter().flatten() {
             if let Some(block) = block.as_ref() {
                 let block_state = if hovered_blocks.contains(block) {
@@ -57,9 +73,23 @@ async fn main() {
                 block.draw(block_state);
             }
         }
+
+        // Render grid on top of blocks
         grid.draw();
+
+        // -----------
+        // Post render
+        // -----------
+        if grid.has_gaps() {
+            game_state = GameState::BlocksFalling;
+        }
 
         fps_limiter.wait_for_next_frame();
         next_frame().await
     }
+}
+
+enum GameState {
+    Playing,
+    BlocksFalling,
 }
