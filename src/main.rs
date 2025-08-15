@@ -1,8 +1,11 @@
+use std::collections::HashSet;
+
 use macroquad::{
     color::colors,
     prelude::*,
     rand::{self},
 };
+use ordered_float::OrderedFloat;
 use strum::{EnumIter, IntoEnumIterator};
 
 use crate::has_bounds::{Bounds, HasBounds};
@@ -32,11 +35,16 @@ async fn main() {
 
         // Update hover state
         let (mouse_x, mouse_y) = mouse_position();
-        let hovered_block = grid.get_block_at(mouse_x, mouse_y);
+        let hovered_blocks = if let Some(block) = grid.get_block_at_pixel_position(mouse_x, mouse_y)
+        {
+            grid.get_block_region(block)
+        } else {
+            HashSet::new()
+        };
 
         // Draw game
-        for block in grid.blocks.iter() {
-            let block_state = if hovered_block.is_some_and(|it| std::ptr::eq(it, block)) {
+        for block in grid.blocks.iter().flatten() {
+            let block_state = if hovered_blocks.contains(block) {
                 BlockState::Hover
             } else {
                 BlockState::Default
@@ -54,7 +62,7 @@ enum BlockState {
     Hover,
 }
 
-#[derive(EnumIter, Clone)]
+#[derive(EnumIter, Clone, Eq, PartialEq, Hash)]
 enum BlockType {
     Potion,
     Blood,
@@ -77,23 +85,20 @@ impl BlockType {
     }
 }
 
+#[derive(Eq, PartialEq, Hash)]
 struct Block {
-    x: f32,
-    y: f32,
-    size: f32,
-    row: i32,
-    col: i32,
+    x: OrderedFloat<f32>,
+    y: OrderedFloat<f32>,
+    size: OrderedFloat<f32>,
     block_type: BlockType,
 }
 
 impl Block {
-    fn new(x: f32, y: f32, size: f32, row: i32, col: i32, block_type: BlockType) -> Self {
+    fn new(x: f32, y: f32, size: f32, block_type: BlockType) -> Self {
         Self {
-            x,
-            y,
-            size,
-            row,
-            col,
+            x: OrderedFloat(x),
+            y: OrderedFloat(y),
+            size: OrderedFloat(size),
             block_type,
         }
     }
@@ -104,45 +109,55 @@ impl Block {
             BlockState::Hover => colors::LIGHTGRAY,
         };
 
-        draw_rectangle(self.x, self.y, self.size, self.size, color);
+        draw_rectangle(
+            self.x.into_inner(),
+            self.y.into_inner(),
+            self.size.into_inner(),
+            self.size.into_inner(),
+            color,
+        );
     }
 }
 
 impl HasBounds for Block {
     fn get_bounds(&self) -> Bounds {
         Bounds {
-            left: self.x,
-            right: self.x + self.size,
-            top: self.y,
-            bottom: self.y + self.size,
+            left: self.x.into_inner(),
+            right: self.x.into_inner() + self.size.into_inner(),
+            top: self.y.into_inner(),
+            bottom: self.y.into_inner() + self.size.into_inner(),
         }
     }
 }
 
 struct GameGrid {
-    rows: i32,
-    cols: i32,
+    rows: u32,
+    cols: u32,
     width: f32,
     height: f32,
     block_size: f32,
     x: f32,
     y: f32,
-    blocks: Vec<Block>,
+    /// Rows then Columns (top to bottom)
+    blocks: Vec<Vec<Block>>,
 }
 
 impl GameGrid {
-    fn new(x: f32, y: f32, width: f32, height: f32, rows: i32, cols: i32) -> Self {
-        let mut blocks = vec![];
+    fn new(x: f32, y: f32, width: f32, height: f32, rows: u32, cols: u32) -> Self {
         let block_size = (width / cols as f32).min(height / rows as f32);
         let block_types = BlockType::iter().collect::<Vec<_>>();
 
+        let mut block_rows = vec![];
         for row in 0..rows {
+            let mut block_row = vec![];
+
             for col in 0..cols {
                 let x = x + col as f32 * block_size;
                 let y = y + row as f32 * block_size;
                 let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
-                blocks.push(Block::new(x, y, block_size, row, col, block_type));
+                block_row.push(Block::new(x, y, block_size, block_type));
             }
+            block_rows.push(block_row);
         }
 
         GameGrid {
@@ -153,7 +168,7 @@ impl GameGrid {
             width,
             height,
             block_size,
-            blocks,
+            blocks: block_rows,
         }
     }
 
@@ -188,15 +203,87 @@ impl GameGrid {
         }
     }
 
-    fn get_block_at(&self, x: f32, y: f32) -> Option<&Block> {
-        if self.is_within_bounds(x, y) {
-            return self
-                .blocks
-                .iter()
-                .find(|block| block.is_within_bounds(x, y));
+    fn get_grid_position(&self, x: f32, y: f32) -> Option<(u32, u32)> {
+        if !self.is_within_bounds(x, y) {
+            return None;
+        }
+
+        let row = (y - self.y) as u32 / self.block_size as u32;
+        let col = (x - self.x) as u32 / self.block_size as u32;
+
+        Some((row, col))
+    }
+
+    fn get_block_at_pixel_position(&self, x: f32, y: f32) -> Option<&Block> {
+        let (row, col) = self.get_grid_position(x, y)?;
+
+        self.get_block_at_grid_position(row, col)
+    }
+
+    fn get_block_at_grid_position(&self, row: u32, col: u32) -> Option<&Block> {
+        if row < self.rows && col < self.cols {
+            return Some(&self.blocks[row as usize][col as usize]);
         }
 
         None
+    }
+
+    fn get_block_region<'a>(&'a self, start_block: &'a Block) -> HashSet<&'a Block> {
+        let mut region = HashSet::new();
+
+        let mut neighbors = vec![start_block];
+
+        while let Some(block) = neighbors.pop() {
+            region.insert(block);
+
+            for neighbor in self.get_neighbors(block) {
+                if !region.contains(neighbor) && neighbor.block_type == block.block_type {
+                    neighbors.push(neighbor);
+                }
+            }
+        }
+
+        region
+    }
+
+    fn get_neighbors(&self, block: &Block) -> Vec<&Block> {
+        let mut neighbors = Vec::new();
+        let grid_position = self.get_grid_position(block.x.into_inner(), block.y.into_inner());
+
+        if grid_position.is_none() {
+            return vec![];
+        }
+        let (row, col) = grid_position.unwrap();
+
+        // Up
+        if row > 0 {
+            if let Some(block) = self.get_block_at_grid_position(row - 1, col) {
+                neighbors.push(block);
+            }
+        }
+
+        // Down
+        if row < self.rows - 1 {
+            if let Some(block) = self.get_block_at_grid_position(row + 1, col) {
+                neighbors.push(block);
+            }
+        }
+
+        // Left
+        if col > 0 {
+            if let Some(block) = self.get_block_at_grid_position(row, col - 1) {
+                neighbors.push(block);
+            }
+        }
+
+        // Right
+        if col < self.cols - 1 {
+            if let Some(block) = self.get_block_at_grid_position(row, col + 1) {
+                neighbors.push(block);
+            }
+        }
+
+        neighbors
     }
 }
 
