@@ -8,8 +8,12 @@ use macroquad::{
 use ordered_float::OrderedFloat;
 use strum::{EnumIter, IntoEnumIterator};
 
-use crate::has_bounds::{Bounds, HasBounds};
+use crate::{
+    fps_limiter::FpsLimiter,
+    has_bounds::{Bounds, HasBounds},
+};
 
+mod fps_limiter;
 mod has_bounds;
 
 const BACKGROUND_COLOR: u32 = 0x31263E;
@@ -27,6 +31,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    let mut fps_limiter = FpsLimiter::new(60.0);
     let grid_size = screen_width().min(screen_height()) - 2. * GRID_MARGIN;
     let grid = GameGrid::new(GRID_MARGIN, GRID_MARGIN, grid_size, grid_size, 10, 10);
 
@@ -53,6 +58,9 @@ async fn main() {
         }
         grid.draw();
 
+        draw_fps();
+
+        fps_limiter.wait_for_next_frame();
         next_frame().await
     }
 }
