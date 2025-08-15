@@ -1,10 +1,9 @@
-use std::cell::RefCell;
-
 use macroquad::{
     color::colors,
     prelude::*,
     rand::{self},
 };
+use strum::{EnumIter, IntoEnumIterator};
 
 use crate::has_bounds::{Bounds, HasBounds};
 
@@ -34,15 +33,16 @@ async fn main() {
         // Update hover state
         let (mouse_x, mouse_y) = mouse_position();
         let hovered_block = grid.get_block_at(mouse_x, mouse_y);
-        for block in grid.blocks.iter() {
-            if hovered_block.is_some_and(|it| std::ptr::eq(it, block)) {
-                *block.state.borrow_mut() = BlockState::Hover;
-            } else {
-                *block.state.borrow_mut() = BlockState::Default;
-            }
-        }
 
         // Draw game
+        for block in grid.blocks.iter() {
+            let block_state = if hovered_block.is_some_and(|it| std::ptr::eq(it, block)) {
+                BlockState::Hover
+            } else {
+                BlockState::Default
+            };
+            block.draw(block_state);
+        }
         grid.draw();
 
         next_frame().await
@@ -54,32 +54,53 @@ enum BlockState {
     Hover,
 }
 
+#[derive(EnumIter, Clone)]
+enum BlockType {
+    Potion,
+    Blood,
+    Bone,
+    Poison,
+    Coffin,
+    Amber,
+}
+
+impl BlockType {
+    fn get_color(&self) -> Color {
+        match self {
+            BlockType::Potion => colors::GREEN,
+            BlockType::Blood => colors::RED,
+            BlockType::Bone => colors::BEIGE,
+            BlockType::Poison => colors::PURPLE,
+            BlockType::Coffin => colors::BLACK,
+            BlockType::Amber => colors::ORANGE,
+        }
+    }
+}
+
 struct Block {
     x: f32,
     y: f32,
     size: f32,
     row: i32,
     col: i32,
-    color: Color,
-    state: RefCell<BlockState>,
+    block_type: BlockType,
 }
 
 impl Block {
-    fn new(x: f32, y: f32, size: f32, row: i32, col: i32, color: Color) -> Self {
+    fn new(x: f32, y: f32, size: f32, row: i32, col: i32, block_type: BlockType) -> Self {
         Self {
             x,
             y,
             size,
             row,
             col,
-            color,
-            state: RefCell::new(BlockState::Default),
+            block_type,
         }
     }
 
-    fn draw(&self) {
-        let color = match *self.state.borrow() {
-            BlockState::Default => self.color,
+    fn draw(&self, state: BlockState) {
+        let color = match state {
+            BlockState::Default => self.block_type.get_color(),
             BlockState::Hover => colors::LIGHTGRAY,
         };
 
@@ -113,13 +134,14 @@ impl GameGrid {
     fn new(x: f32, y: f32, width: f32, height: f32, rows: i32, cols: i32) -> Self {
         let mut blocks = vec![];
         let block_size = (width / cols as f32).min(height / rows as f32);
+        let block_types = BlockType::iter().collect::<Vec<_>>();
 
         for row in 0..rows {
             for col in 0..cols {
                 let x = x + col as f32 * block_size;
                 let y = y + row as f32 * block_size;
-                let color = COLORS[rand::rand() as usize % COLORS.len()];
-                blocks.push(Block::new(x, y, block_size, row, col, color));
+                let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
+                blocks.push(Block::new(x, y, block_size, row, col, block_type));
             }
         }
 
@@ -136,10 +158,6 @@ impl GameGrid {
     }
 
     fn draw(&self) {
-        for block in self.blocks.iter() {
-            block.draw();
-        }
-
         draw_rectangle_lines(self.x, self.y, self.width, self.height, 2., BLACK);
 
         // Draw rows

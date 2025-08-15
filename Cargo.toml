@@ -7,3 +7,4 @@ publish = false
 [dependencies]
 macroquad = "0.4.14"
 palette = "0.7.6"
+strum = { version = "0.27.2", features = ["derive"] }
