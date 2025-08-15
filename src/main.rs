@@ -188,7 +188,6 @@ impl GameGrid {
 
     fn draw(&self) {
         let color = Color::from_hex(BACKGROUND_COLOR);
-        draw_rectangle_lines(self.x, self.y, self.width, self.height, 2., color);
 
         // Draw rows
         for i in 1..self.rows {
