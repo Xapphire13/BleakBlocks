@@ -9,6 +9,7 @@ use crate::has_bounds::{Bounds, HasBounds};
 
 mod has_bounds;
 
+const BACKGROUND_COLOR: u32 = 0x31263E;
 const GRID_MARGIN: f32 = 20.0;
 
 fn window_conf() -> Conf {
@@ -27,7 +28,7 @@ async fn main() {
     let grid = GameGrid::new(GRID_MARGIN, GRID_MARGIN, grid_size, grid_size, 10, 10);
 
     loop {
-        clear_background(WHITE);
+        clear_background(Color::from_hex(BACKGROUND_COLOR));
 
         // Update hover state
         let (mouse_x, mouse_y) = mouse_position();
@@ -157,7 +158,8 @@ impl GameGrid {
     }
 
     fn draw(&self) {
-        draw_rectangle_lines(self.x, self.y, self.width, self.height, 2., BLACK);
+        let color = Color::from_hex(BACKGROUND_COLOR);
+        draw_rectangle_lines(self.x, self.y, self.width, self.height, 2., color);
 
         // Draw rows
         for i in 1..self.rows {
@@ -168,7 +170,7 @@ impl GameGrid {
                 self.x + self.width,
                 self.y + y,
                 1.,
-                BLACK,
+                color,
             );
         }
 
@@ -181,7 +183,7 @@ impl GameGrid {
                 self.x + x,
                 self.y + self.height,
                 1.,
-                BLACK,
+                color,
             );
         }
     }
