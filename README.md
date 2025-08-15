@@ -1,2 +1,2 @@
-# BlockBreaker
-Block breaking game of iOS/MacOS
+# Bleak Blocks
+Spooky block breaking game of iOS/MacOS

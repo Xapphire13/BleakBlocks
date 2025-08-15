@@ -10,11 +10,10 @@ use crate::has_bounds::{Bounds, HasBounds};
 mod has_bounds;
 
 const GRID_MARGIN: f32 = 20.0;
-const COLORS: [Color; 6] = [GREEN, BLUE, PURPLE, RED, YELLOW, ORANGE];
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: env!("CARGO_PKG_NAME").to_string(),
+        window_title: "Bleak Blocks".to_owned(),
         window_height: 500,
         window_width: 500,
         window_resizable: false,
