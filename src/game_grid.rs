@@ -4,7 +4,7 @@ use macroquad::{color::Color, rand, shapes::draw_line};
 use strum::IntoEnumIterator;
 
 use crate::{
-    BACKGROUND_COLOR,
+    BACKGROUND_COLOR, BLOCK_FALL_SPEED,
     block::{Block, BlockType},
     has_bounds::{Bounds, HasBounds},
 };
@@ -199,6 +199,38 @@ impl GameGrid {
         }
 
         false
+    }
+
+    pub fn animate_falling(&mut self, time_delta_seconds: f64) {
+        for col in 0..self.cols {
+            for row in (0..self.rows).rev() {
+                if (row + 1 < self.rows) && self.blocks[row as usize + 1][col as usize].is_none() {
+                    let mut new_position = None;
+                    if let Some(block) = self.blocks[row as usize][col as usize].as_mut() {
+                        block.set_y(
+                            block.y() + (BLOCK_FALL_SPEED as f64 * time_delta_seconds) as f32,
+                        );
+                        new_position = Some((block.x(), block.y()));
+                    }
+
+                    if let Some((new_x, new_y)) = new_position {
+                        if let Some((new_row, ..)) = self.get_grid_position(new_x, new_y) {
+                            if new_row != row {
+                                // block moved into new grid position
+                                let mut block = self.blocks[row as usize][col as usize].take();
+
+                                // Ensure it stops on a clean block boundary
+                                if let Some(block) = block.as_mut() {
+                                    block.set_y(self.y + new_row as f32 * self.block_size);
+                                }
+
+                                self.blocks[new_row as usize][col as usize] = block;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

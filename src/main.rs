@@ -11,6 +11,8 @@ mod has_bounds;
 
 const BACKGROUND_COLOR: u32 = 0x31263E;
 const GRID_MARGIN: f32 = 20.0;
+/// pixels per second that blocks fall
+const BLOCK_FALL_SPEED: f32 = 100.0;
 
 fn window_conf() -> Conf {
     Conf {
@@ -36,11 +38,6 @@ async fn main() {
         // Frame state
         // -----
         let mut hovered_blocks = HashSet::new();
-
-        // ---------
-        // Animation
-        // ---------
-        if let GameState::BlocksFalling = game_state {}
 
         // -------------------
         // Handle player input
@@ -77,11 +74,25 @@ async fn main() {
         // Render grid on top of blocks
         grid.draw();
 
-        // -----------
-        // Post render
-        // -----------
-        if grid.has_gaps() {
-            game_state = GameState::BlocksFalling;
+        // ------
+        // Update
+        // ------
+        match game_state {
+            GameState::Playing => {
+                if grid.has_gaps() {
+                    game_state = GameState::BlocksFalling(get_time());
+                }
+            }
+            GameState::BlocksFalling(last_update) => {
+                let time_delta = get_time() - last_update;
+                grid.animate_falling(time_delta);
+
+                game_state = if grid.has_gaps() {
+                    GameState::BlocksFalling(get_time())
+                } else {
+                    GameState::Playing
+                };
+            }
         }
 
         fps_limiter.wait_for_next_frame();
@@ -91,5 +102,6 @@ async fn main() {
 
 enum GameState {
     Playing,
-    BlocksFalling,
+    /// Contains the time of the last update we made in this state
+    BlocksFalling(f64),
 }

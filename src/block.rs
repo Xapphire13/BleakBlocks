@@ -61,6 +61,10 @@ impl Block {
         self.y.into_inner()
     }
 
+    pub fn set_y(&mut self, y: f32) {
+        self.y.0 = y;
+    }
+
     pub fn draw(&self, state: BlockState) {
         let color = match state {
             BlockState::Default => self.block_type.get_color(),
