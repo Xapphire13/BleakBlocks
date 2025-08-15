@@ -33,13 +33,19 @@ fn window_conf() -> Conf {
 async fn main() {
     let mut fps_limiter = FpsLimiter::new(60.0);
     let grid_size = screen_width().min(screen_height()) - 2. * GRID_MARGIN;
-    let grid = GameGrid::new(GRID_MARGIN, GRID_MARGIN, grid_size, grid_size, 10, 10);
+    let mut grid = GameGrid::new(GRID_MARGIN, GRID_MARGIN, grid_size, grid_size, 10, 10);
 
     loop {
         clear_background(Color::from_hex(BACKGROUND_COLOR));
 
         // Update hover state
         let (mouse_x, mouse_y) = mouse_position();
+
+        // Remove blocks when clicked
+        if is_mouse_button_down(MouseButton::Left) {
+            grid.remove_block_region(mouse_x, mouse_y);
+        }
+
         let hovered_blocks = if let Some(block) = grid.get_block_at_pixel_position(mouse_x, mouse_y)
         {
             grid.get_block_region(block)
@@ -49,16 +55,16 @@ async fn main() {
 
         // Draw game
         for block in grid.blocks.iter().flatten() {
-            let block_state = if hovered_blocks.contains(block) {
-                BlockState::Hover
-            } else {
-                BlockState::Default
-            };
-            block.draw(block_state);
+            if let Some(block) = block.as_ref() {
+                let block_state = if hovered_blocks.contains(block) {
+                    BlockState::Hover
+                } else {
+                    BlockState::Default
+                };
+                block.draw(block_state);
+            }
         }
         grid.draw();
-
-        draw_fps();
 
         fps_limiter.wait_for_next_frame();
         next_frame().await
@@ -147,7 +153,7 @@ struct GameGrid {
     x: f32,
     y: f32,
     /// Rows then Columns (top to bottom)
-    blocks: Vec<Vec<Block>>,
+    blocks: Vec<Vec<Option<Block>>>,
 }
 
 impl GameGrid {
@@ -163,7 +169,7 @@ impl GameGrid {
                 let x = x + col as f32 * block_size;
                 let y = y + row as f32 * block_size;
                 let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
-                block_row.push(Block::new(x, y, block_size, block_type));
+                block_row.push(Some(Block::new(x, y, block_size, block_type)));
             }
             block_rows.push(block_row);
         }
@@ -230,7 +236,7 @@ impl GameGrid {
 
     fn get_block_at_grid_position(&self, row: u32, col: u32) -> Option<&Block> {
         if row < self.rows && col < self.cols {
-            return Some(&self.blocks[row as usize][col as usize]);
+            return self.blocks[row as usize][col as usize].as_ref();
         }
 
         None
@@ -292,6 +298,26 @@ impl GameGrid {
         }
 
         neighbors
+    }
+
+    fn remove_block_region(&mut self, x: f32, y: f32) {
+        let start_block = self.get_block_at_pixel_position(x, y);
+
+        if start_block.is_none() {
+            return;
+        }
+
+        let start_block = start_block.unwrap();
+        let block_positions = self
+            .get_block_region(start_block)
+            .iter()
+            .map(|block| self.get_grid_position(block.x.into_inner(), block.y.into_inner()))
+            .flatten()
+            .collect::<Vec<_>>();
+
+        for &(row, col) in block_positions.iter() {
+            self.blocks[row as usize][col as usize] = None;
+        }
     }
 }
 
