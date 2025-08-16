@@ -59,20 +59,34 @@ async fn main() {
         // Rendering
         // ---------
 
-        // Render grid with blocks
-        grid.draw(hovered_blocks);
+        if let GameState::GameOver = game_state {
+            let dimensions = draw_text("Game Over!", 0., 0., 32., BLANK);
+            draw_text(
+                "Game Over!",
+                (screen_width() - dimensions.width) / 2.0,
+                (screen_height() - dimensions.height) / 2.0,
+                32.,
+                WHITE,
+            );
+        } else {
+            // Render grid with blocks
+            grid.draw(hovered_blocks);
+        }
 
         // ------
         // Update
         // ------
         match game_state {
             GameState::Playing => {
-                if grid.has_gaps() {
+                if grid.is_game_over() {
+                    game_state = GameState::GameOver;
+                } else if grid.has_gaps() {
                     game_state = GameState::BlocksFalling(get_time());
                 } else if grid.columns_need_shifting() {
                     game_state = GameState::ColumnsShifting(get_time());
                 }
             }
+            GameState::GameOver => {}
             GameState::BlocksFalling(last_update) => {
                 let time_delta = get_time() - last_update;
                 grid.animate_falling(time_delta);
@@ -106,6 +120,7 @@ async fn main() {
 
 enum GameState {
     Playing,
+    GameOver,
     /// Contains the time of the last update we made in this state
     BlocksFalling(f64),
     /// Contains the time of the last update we made in this state

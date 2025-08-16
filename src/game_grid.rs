@@ -17,7 +17,8 @@ pub struct GameGrid {
     x: f32,
     y: f32,
     /// Rows then Columns (top to bottom)
-    pub blocks: Vec<Vec<Option<Block>>>,
+    blocks: Vec<Vec<Option<Block>>>,
+    blocks_remaining: u32,
 }
 
 impl GameGrid {
@@ -47,6 +48,7 @@ impl GameGrid {
             height,
             block_size,
             blocks: block_rows,
+            blocks_remaining: cols * rows,
         }
     }
 
@@ -172,6 +174,8 @@ impl GameGrid {
         for &(row, col) in block_positions.iter() {
             self.blocks[row as usize][col as usize] = None;
         }
+
+        self.blocks_remaining -= block_positions.len() as u32;
     }
 
     /// Returns true if there are gaps in the grid (i.e. blocks have been removed and need to be rearranged)
@@ -271,6 +275,10 @@ impl GameGrid {
                 }
             }
         }
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.blocks_remaining == 0
     }
 }
 
