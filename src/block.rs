@@ -22,7 +22,7 @@ pub enum BlockType {
     Bone,
     Poison,
     Coffin,
-    Amber,
+    Flame,
 }
 
 impl BlockType {
@@ -33,7 +33,7 @@ impl BlockType {
             BlockType::Bone => colors::BEIGE,
             BlockType::Poison => colors::PURPLE,
             BlockType::Coffin => colors::BLACK,
-            BlockType::Amber => colors::ORANGE,
+            BlockType::Flame => colors::ORANGE,
         }
     }
 }
