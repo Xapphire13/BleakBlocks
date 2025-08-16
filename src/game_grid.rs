@@ -209,6 +209,31 @@ impl GameGrid {
         false
     }
 
+    fn is_column_empty(&self, col: u32) -> bool {
+        for row in (0..self.rows).rev() {
+            if self.blocks[row as usize][col as usize].is_some() {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// Returns true if any columns need shifting due to empty columns in the grid
+    pub fn columns_need_shifting(&self) -> bool {
+        let mut found_empty_column = false;
+        for col in 0..self.cols {
+            if self.is_column_empty(col) {
+                found_empty_column = true;
+            } else if found_empty_column {
+                // We encountered a non-empty column after an empty column (columns need to shift)
+                return true;
+            }
+        }
+
+        false
+    }
+
     pub fn animate_falling(&mut self, elapsed_time_seconds: f64) {
         for col in 0..self.cols {
             let mut empty_spaces = 0;
@@ -218,7 +243,7 @@ impl GameGrid {
                     Some(mut block) => {
                         let terminal_row = row + empty_spaces;
                         let terminal_row_y =
-                            GameGrid::row_to_y(self.x, self.block_size, terminal_row);
+                            GameGrid::row_to_y(self.y, self.block_size, terminal_row);
                         if empty_spaces > 0 {
                             block.apply_gravity(elapsed_time_seconds);
 
@@ -227,14 +252,45 @@ impl GameGrid {
                                 block.set_velocity(0.0);
                                 self.blocks[terminal_row as usize][col as usize].replace(block);
                             } else {
+                                // Put the block back, its not in its final location yet
                                 self.blocks[row as usize][col as usize].replace(block);
                             }
                         } else {
+                            // Put the block back, we didn't move it
                             self.blocks[row as usize][col as usize].replace(block);
                         }
                     }
                     None => {
                         empty_spaces += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn shift_columns(&mut self, elapsed_time_seconds: f64) {
+        let mut empty_columns = 0;
+
+        for col in 0..self.cols {
+            if self.is_column_empty(col) {
+                empty_columns += 1;
+                continue;
+            }
+
+            let terminal_col = col - empty_columns;
+            let terminal_col_x = GameGrid::col_to_x(self.x, self.block_size, terminal_col);
+
+            for row in 0..self.rows {
+                if let Some(mut block) = self.blocks[row as usize][col as usize].take() {
+                    block.apply_gravity_left(elapsed_time_seconds);
+
+                    if block.x() <= terminal_col_x {
+                        block.set_x(terminal_col_x);
+                        block.set_velocity(0.0);
+                        self.blocks[row as usize][terminal_col as usize].replace(block);
+                    } else {
+                        // Put the block back, its not in its final location yet
+                        self.blocks[row as usize][col as usize].replace(block);
                     }
                 }
             }

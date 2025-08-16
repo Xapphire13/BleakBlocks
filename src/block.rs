@@ -66,12 +66,22 @@ impl Block {
         self.y.into_inner()
     }
 
+    pub fn set_x(&mut self, x: f32) {
+        self.x.0 = x;
+    }
+
     pub fn set_y(&mut self, y: f32) {
         self.y.0 = y;
     }
 
     pub fn apply_gravity(&mut self, elapsed_time: f64) {
         self.y.0 += (self.velocity.0 as f64 * elapsed_time) as f32;
+        self.velocity.0 += (GRAVITY as f64 * elapsed_time) as f32;
+    }
+
+    /// Similar to falling, but for shifting columns to the left
+    pub fn apply_gravity_left(&mut self, elapsed_time: f64) {
+        self.x.0 -= (self.velocity.0 as f64 * elapsed_time) as f32;
         self.velocity.0 += (GRAVITY as f64 * elapsed_time) as f32;
     }
 

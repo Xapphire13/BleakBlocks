@@ -81,6 +81,8 @@ async fn main() {
             GameState::Playing => {
                 if grid.has_gaps() {
                     game_state = GameState::BlocksFalling(get_time());
+                } else if grid.columns_need_shifting() {
+                    game_state = GameState::ColumnsShifting(get_time());
                 }
             }
             GameState::BlocksFalling(last_update) => {
@@ -89,6 +91,20 @@ async fn main() {
 
                 game_state = if grid.has_gaps() {
                     GameState::BlocksFalling(get_time())
+                } else {
+                    if grid.columns_need_shifting() {
+                        GameState::ColumnsShifting(get_time())
+                    } else {
+                        GameState::Playing
+                    }
+                };
+            }
+            GameState::ColumnsShifting(last_update) => {
+                let time_delta = get_time() - last_update;
+                grid.shift_columns(time_delta);
+
+                game_state = if grid.columns_need_shifting() {
+                    GameState::ColumnsShifting(get_time())
                 } else {
                     GameState::Playing
                 };
@@ -104,4 +120,6 @@ enum GameState {
     Playing,
     /// Contains the time of the last update we made in this state
     BlocksFalling(f64),
+    /// Contains the time of the last update we made in this state
+    ColumnsShifting(f64),
 }
