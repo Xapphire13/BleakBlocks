@@ -4,7 +4,7 @@ use macroquad::{color::Color, rand, shapes::draw_line};
 use strum::IntoEnumIterator;
 
 use crate::{
-    BACKGROUND_COLOR, BLOCK_FALL_SPEED,
+    BACKGROUND_COLOR,
     block::{Block, BlockType},
     has_bounds::{Bounds, HasBounds},
 };
@@ -31,8 +31,8 @@ impl GameGrid {
             let mut block_row = vec![];
 
             for col in 0..cols {
-                let x = x + col as f32 * block_size;
-                let y = y + row as f32 * block_size;
+                let x = GameGrid::col_to_x(x, block_size, col);
+                let y = GameGrid::row_to_y(y, block_size, row);
                 let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
                 block_row.push(Some(Block::new(x, y, block_size, block_type)));
             }
@@ -49,6 +49,14 @@ impl GameGrid {
             block_size,
             blocks: block_rows,
         }
+    }
+
+    fn row_to_y(base_y: f32, block_size: f32, row: u32) -> f32 {
+        base_y + row as f32 * block_size
+    }
+
+    fn col_to_x(base_x: f32, block_size: f32, col: u32) -> f32 {
+        base_x + col as f32 * block_size
     }
 
     pub fn draw(&self) {
@@ -201,32 +209,32 @@ impl GameGrid {
         false
     }
 
-    pub fn animate_falling(&mut self, time_delta_seconds: f64) {
+    pub fn animate_falling(&mut self, elapsed_time_seconds: f64) {
         for col in 0..self.cols {
+            let mut empty_spaces = 0;
             for row in (0..self.rows).rev() {
-                if (row + 1 < self.rows) && self.blocks[row as usize + 1][col as usize].is_none() {
-                    let mut new_position = None;
-                    if let Some(block) = self.blocks[row as usize][col as usize].as_mut() {
-                        block.set_y(
-                            block.y() + (BLOCK_FALL_SPEED as f64 * time_delta_seconds) as f32,
-                        );
-                        new_position = Some((block.x(), block.y()));
-                    }
+                let block = self.blocks[row as usize][col as usize].take();
+                match block {
+                    Some(mut block) => {
+                        let terminal_row = row + empty_spaces;
+                        let terminal_row_y =
+                            GameGrid::row_to_y(self.x, self.block_size, terminal_row);
+                        if empty_spaces > 0 {
+                            block.apply_gravity(elapsed_time_seconds);
 
-                    if let Some((new_x, new_y)) = new_position {
-                        if let Some((new_row, ..)) = self.get_grid_position(new_x, new_y) {
-                            if new_row != row {
-                                // block moved into new grid position
-                                let mut block = self.blocks[row as usize][col as usize].take();
-
-                                // Ensure it stops on a clean block boundary
-                                if let Some(block) = block.as_mut() {
-                                    block.set_y(self.y + new_row as f32 * self.block_size);
-                                }
-
-                                self.blocks[new_row as usize][col as usize] = block;
+                            if block.y() >= terminal_row_y {
+                                block.set_y(terminal_row_y);
+                                block.set_velocity(0.0);
+                                self.blocks[terminal_row as usize][col as usize].replace(block);
+                            } else {
+                                self.blocks[row as usize][col as usize].replace(block);
                             }
+                        } else {
+                            self.blocks[row as usize][col as usize].replace(block);
                         }
+                    }
+                    None => {
+                        empty_spaces += 1;
                     }
                 }
             }

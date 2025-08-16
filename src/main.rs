@@ -11,8 +11,8 @@ mod has_bounds;
 
 const BACKGROUND_COLOR: u32 = 0x31263E;
 const GRID_MARGIN: f32 = 20.0;
-/// pixels per second that blocks fall
-const BLOCK_FALL_SPEED: f32 = 100.0;
+/// Gravity in pixels per second^2 that is applied to falling blocks
+const GRAVITY: f32 = 2000.0;
 
 fn window_conf() -> Conf {
     Conf {

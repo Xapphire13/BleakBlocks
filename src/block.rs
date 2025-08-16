@@ -5,7 +5,10 @@ use macroquad::{
 use ordered_float::OrderedFloat;
 use strum::EnumIter;
 
-use crate::has_bounds::{Bounds, HasBounds};
+use crate::{
+    GRAVITY,
+    has_bounds::{Bounds, HasBounds},
+};
 
 pub enum BlockState {
     Default,
@@ -41,6 +44,7 @@ pub struct Block {
     y: OrderedFloat<f32>,
     size: OrderedFloat<f32>,
     pub block_type: BlockType,
+    velocity: OrderedFloat<f32>,
 }
 
 impl Block {
@@ -50,6 +54,7 @@ impl Block {
             y: OrderedFloat(y),
             size: OrderedFloat(size),
             block_type,
+            velocity: OrderedFloat(0.0),
         }
     }
 
@@ -63,6 +68,15 @@ impl Block {
 
     pub fn set_y(&mut self, y: f32) {
         self.y.0 = y;
+    }
+
+    pub fn apply_gravity(&mut self, elapsed_time: f64) {
+        self.y.0 += (self.velocity.0 as f64 * elapsed_time) as f32;
+        self.velocity.0 += (GRAVITY as f64 * elapsed_time) as f32;
+    }
+
+    pub fn set_velocity(&mut self, velocity: f32) {
+        self.velocity.0 = velocity;
     }
 
     pub fn draw(&self, state: BlockState) {
