@@ -1,6 +1,10 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    time::{SystemTime, UNIX_EPOCH},
+    u64,
+};
 
-use macroquad::prelude::*;
+use macroquad::{prelude::*, rand::srand};
 
 use crate::{fps_limiter::FpsLimiter, game_grid::GameGrid};
 
@@ -26,6 +30,14 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    // Seed the random number generator based on system time
+    srand(
+        (SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+            % u64::MAX as u128) as u64,
+    );
     let mut game_state = GameState::Playing;
     let mut fps_limiter = FpsLimiter::new(60.0);
     let grid_size = screen_width().min(screen_height()) - 2. * GRID_MARGIN;
