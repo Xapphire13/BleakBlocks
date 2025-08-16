@@ -238,30 +238,23 @@ impl GameGrid {
         for col in 0..self.cols {
             let mut empty_spaces = 0;
             for row in (0..self.rows).rev() {
-                let block = self.blocks[row as usize][col as usize].take();
-                match block {
-                    Some(mut block) => {
+                if self.blocks[row as usize][col as usize].is_none() {
+                    empty_spaces += 1;
+                } else if empty_spaces > 0 {
+                    if let Some(mut block) = self.blocks[row as usize][col as usize].take() {
                         let terminal_row = row + empty_spaces;
                         let terminal_row_y =
                             GameGrid::row_to_y(self.y, self.block_size, terminal_row);
-                        if empty_spaces > 0 {
-                            block.apply_gravity(elapsed_time_seconds);
+                        block.apply_gravity(elapsed_time_seconds);
 
-                            if block.y() >= terminal_row_y {
-                                block.set_y(terminal_row_y);
-                                block.set_velocity(0.0);
-                                self.blocks[terminal_row as usize][col as usize].replace(block);
-                            } else {
-                                // Put the block back, its not in its final location yet
-                                self.blocks[row as usize][col as usize].replace(block);
-                            }
+                        if block.y() >= terminal_row_y {
+                            block.set_y(terminal_row_y);
+                            block.set_velocity(0.0);
+                            self.blocks[terminal_row as usize][col as usize].replace(block);
                         } else {
-                            // Put the block back, we didn't move it
+                            // Put the block back, its not in its final location yet
                             self.blocks[row as usize][col as usize].replace(block);
                         }
-                    }
-                    None => {
-                        empty_spaces += 1;
                     }
                 }
             }
