@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use macroquad::prelude::*;
 
-use crate::{block::BlockState, fps_limiter::FpsLimiter, game_grid::GameGrid};
+use crate::{fps_limiter::FpsLimiter, game_grid::GameGrid};
 
 mod block;
 mod fps_limiter;
@@ -59,20 +59,8 @@ async fn main() {
         // Rendering
         // ---------
 
-        // Render blocks
-        for block in grid.blocks.iter().flatten() {
-            if let Some(block) = block.as_ref() {
-                let block_state = if hovered_blocks.contains(block) {
-                    BlockState::Hover
-                } else {
-                    BlockState::Default
-                };
-                block.draw(block_state);
-            }
-        }
-
-        // Render grid on top of blocks
-        grid.draw();
+        // Render grid with blocks
+        grid.draw(hovered_blocks);
 
         // ------
         // Update

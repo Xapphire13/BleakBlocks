@@ -1,12 +1,12 @@
 use macroquad::{
     color::{Color, colors},
-    shapes::draw_rectangle,
+    shapes::{draw_rectangle, draw_rectangle_lines},
 };
 use ordered_float::OrderedFloat;
 use strum::EnumIter;
 
 use crate::{
-    GRAVITY,
+    BACKGROUND_COLOR, GRAVITY,
     has_bounds::{Bounds, HasBounds},
 };
 
@@ -101,6 +101,15 @@ impl Block {
             self.size.into_inner(),
             self.size.into_inner(),
             color,
+        );
+
+        draw_rectangle_lines(
+            self.x(),
+            self.y(),
+            self.size.into_inner(),
+            self.size.into_inner(),
+            1.0,
+            Color::from_hex(BACKGROUND_COLOR),
         );
     }
 }

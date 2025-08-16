@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
-use macroquad::{color::Color, rand, shapes::draw_line};
+use macroquad::rand;
 use strum::IntoEnumIterator;
 
 use crate::{
-    BACKGROUND_COLOR,
-    block::{Block, BlockType},
+    block::{Block, BlockState, BlockType},
     has_bounds::{Bounds, HasBounds},
 };
 
@@ -59,33 +58,17 @@ impl GameGrid {
         base_x + col as f32 * block_size
     }
 
-    pub fn draw(&self) {
-        let color = Color::from_hex(BACKGROUND_COLOR);
-
-        // Draw rows
-        for i in 1..self.rows {
-            let y = i as f32 * self.block_size;
-            draw_line(
-                self.x,
-                self.y + y,
-                self.x + self.width,
-                self.y + y,
-                1.,
-                color,
-            );
-        }
-
-        // Draw columns
-        for i in 1..self.cols {
-            let x = i as f32 * self.block_size;
-            draw_line(
-                self.x + x,
-                self.y,
-                self.x + x,
-                self.y + self.height,
-                1.,
-                color,
-            );
+    pub fn draw(&self, hovered_blocks: HashSet<&Block>) {
+        // Render blocks
+        for block in self.blocks.iter().flatten() {
+            if let Some(block) = block.as_ref() {
+                let block_state = if hovered_blocks.contains(block) {
+                    BlockState::Hover
+                } else {
+                    BlockState::Default
+                };
+                block.draw(block_state);
+            }
         }
     }
 
