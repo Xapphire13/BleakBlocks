@@ -1,17 +1,16 @@
 use std::{
     collections::HashSet,
     time::{SystemTime, UNIX_EPOCH},
-    u64,
 };
 
 use macroquad::{prelude::*, rand::srand};
 
-use crate::{fps_limiter::FpsLimiter, game_grid::GameGrid};
+use crate::{fps_limiter::FpsLimiter, grid_layout::GridLayout};
 
 mod block;
+mod coordinate;
 mod fps_limiter;
-mod game_grid;
-mod has_bounds;
+mod grid_layout;
 
 const BACKGROUND_COLOR: u32 = 0x31263E;
 const GRID_MARGIN: f32 = 20.0;
@@ -41,7 +40,12 @@ async fn main() {
     let mut game_state = GameState::Playing;
     let mut fps_limiter = FpsLimiter::new(60.0);
     let grid_size = screen_width().min(screen_height()) - 2. * GRID_MARGIN;
-    let mut grid = GameGrid::new(GRID_MARGIN, GRID_MARGIN, grid_size, grid_size, 10, 10);
+    let mut grid = GridLayout::new(
+        Vec2::new(GRID_MARGIN, GRID_MARGIN),
+        Vec2::new(grid_size, grid_size),
+        10,
+        10,
+    );
 
     loop {
         clear_background(Color::from_hex(BACKGROUND_COLOR));
@@ -56,14 +60,14 @@ async fn main() {
         // -------------------
 
         if let GameState::Playing = game_state {
-            let (mouse_x, mouse_y) = mouse_position();
+            let mouse_pos = mouse_position().into();
             // Remove blocks when clicked
             if is_mouse_button_down(MouseButton::Left) {
-                grid.remove_block_region(mouse_x, mouse_y);
+                grid.remove_block_region(mouse_pos);
             }
 
-            if let Some(block) = grid.get_block_at_pixel_position(mouse_x, mouse_y) {
-                hovered_blocks = grid.get_block_region(block)
+            if let Some(position) = grid.world_to_grid(mouse_pos) {
+                hovered_blocks = grid.get_block_region(position)
             };
         }
 
@@ -105,12 +109,10 @@ async fn main() {
 
                 game_state = if grid.has_gaps() {
                     GameState::BlocksFalling(get_time())
+                } else if grid.columns_need_shifting() {
+                    GameState::ColumnsShifting(get_time())
                 } else {
-                    if grid.columns_need_shifting() {
-                        GameState::ColumnsShifting(get_time())
-                    } else {
-                        GameState::Playing
-                    }
+                    GameState::Playing
                 };
             }
             GameState::ColumnsShifting(last_update) => {

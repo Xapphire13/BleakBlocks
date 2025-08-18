@@ -1,14 +1,11 @@
 use macroquad::{
     color::{Color, colors},
+    math::Vec2,
     shapes::{draw_rectangle, draw_rectangle_lines},
 };
-use ordered_float::OrderedFloat;
 use strum::EnumIter;
 
-use crate::{
-    BACKGROUND_COLOR, GRAVITY,
-    has_bounds::{Bounds, HasBounds},
-};
+use crate::{BACKGROUND_COLOR, GRAVITY};
 
 pub enum BlockState {
     Default,
@@ -38,55 +35,37 @@ impl BlockType {
     }
 }
 
-#[derive(Eq, PartialEq, Hash)]
 pub struct Block {
-    x: OrderedFloat<f32>,
-    y: OrderedFloat<f32>,
-    size: OrderedFloat<f32>,
     pub block_type: BlockType,
-    velocity: OrderedFloat<f32>,
+    pub position: Vec2,
+
+    size: f32,
+    velocity: f32,
 }
 
 impl Block {
-    pub fn new(x: f32, y: f32, size: f32, block_type: BlockType) -> Self {
+    pub fn new(position: Vec2, size: f32, block_type: BlockType) -> Self {
         Self {
-            x: OrderedFloat(x),
-            y: OrderedFloat(y),
-            size: OrderedFloat(size),
+            position,
+            size,
             block_type,
-            velocity: OrderedFloat(0.0),
+            velocity: 0.0,
         }
     }
 
-    pub fn x(&self) -> f32 {
-        self.x.into_inner()
-    }
-
-    pub fn y(&self) -> f32 {
-        self.y.into_inner()
-    }
-
-    pub fn set_x(&mut self, x: f32) {
-        self.x.0 = x;
-    }
-
-    pub fn set_y(&mut self, y: f32) {
-        self.y.0 = y;
-    }
-
     pub fn apply_gravity(&mut self, elapsed_time: f64) {
-        self.y.0 += (self.velocity.0 as f64 * elapsed_time) as f32;
-        self.velocity.0 += (GRAVITY as f64 * elapsed_time) as f32;
+        self.position.y += (self.velocity as f64 * elapsed_time) as f32;
+        self.velocity += (GRAVITY as f64 * elapsed_time) as f32;
     }
 
     /// Similar to falling, but for shifting columns to the left
     pub fn apply_gravity_left(&mut self, elapsed_time: f64) {
-        self.x.0 -= (self.velocity.0 as f64 * elapsed_time) as f32;
-        self.velocity.0 += (GRAVITY as f64 * elapsed_time) as f32;
+        self.position.x -= (self.velocity as f64 * elapsed_time) as f32;
+        self.velocity += (GRAVITY as f64 * elapsed_time) as f32;
     }
 
     pub fn set_velocity(&mut self, velocity: f32) {
-        self.velocity.0 = velocity;
+        self.velocity = velocity;
     }
 
     pub fn draw(&self, state: BlockState) {
@@ -96,31 +75,20 @@ impl Block {
         };
 
         draw_rectangle(
-            self.x(),
-            self.y(),
-            self.size.into_inner(),
-            self.size.into_inner(),
+            self.position.x,
+            self.position.y,
+            self.size,
+            self.size,
             color,
         );
 
         draw_rectangle_lines(
-            self.x(),
-            self.y(),
-            self.size.into_inner(),
-            self.size.into_inner(),
+            self.position.x,
+            self.position.y,
+            self.size,
+            self.size,
             1.0,
             Color::from_hex(BACKGROUND_COLOR),
         );
-    }
-}
-
-impl HasBounds for Block {
-    fn get_bounds(&self) -> Bounds {
-        Bounds {
-            left: self.x(),
-            right: self.x() + self.size.into_inner(),
-            top: self.y(),
-            bottom: self.y() + self.size.into_inner(),
-        }
     }
 }
