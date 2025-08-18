@@ -16,10 +16,12 @@ pub enum BlockState {
 pub enum BlockType {
     Potion,
     Blood,
-    Bone,
+    Ghost,
     Poison,
     Coffin,
+    Gravestone,
     Flame,
+    Brain,
 }
 
 impl BlockType {
@@ -27,10 +29,12 @@ impl BlockType {
         match self {
             BlockType::Potion => colors::GREEN,
             BlockType::Blood => colors::RED,
-            BlockType::Bone => colors::BEIGE,
+            BlockType::Ghost => colors::WHITE,
             BlockType::Poison => colors::PURPLE,
             BlockType::Coffin => colors::BLACK,
             BlockType::Flame => colors::ORANGE,
+            BlockType::Gravestone => colors::DARKGRAY,
+            BlockType::Brain => colors::MAGENTA,
         }
     }
 }
