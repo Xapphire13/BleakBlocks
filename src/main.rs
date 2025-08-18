@@ -62,7 +62,7 @@ async fn main() {
         if let GameState::Playing = game_state {
             let mouse_pos = mouse_position().into();
             // Remove blocks when clicked
-            if is_mouse_button_down(MouseButton::Left) {
+            if is_mouse_button_pressed(MouseButton::Left) {
                 grid.remove_block_region(mouse_pos);
             }
 
