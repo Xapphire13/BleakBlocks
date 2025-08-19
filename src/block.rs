@@ -5,7 +5,10 @@ use macroquad::{
 };
 use strum::EnumIter;
 
-use crate::{BACKGROUND_COLOR, GRAVITY};
+use crate::game::BACKGROUND_COLOR;
+
+/// Gravity in pixels per second^2 that is applied to falling blocks
+const GRAVITY: f32 = 2000.0;
 
 pub enum BlockState {
     Default,
