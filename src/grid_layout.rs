@@ -8,12 +8,10 @@ use strum::IntoEnumIterator;
 
 use crate::{
     block::{Block, BlockState, BlockType},
+    constants::FORCE,
     coordinate::{Coordinate, coordinate},
     physics_system::apply_force,
 };
-
-/// Force in pixels per second^2 that is applied to moving blocks
-const FORCE: f32 = 2000.0;
 
 pub struct GridLayout {
     rows: u32,

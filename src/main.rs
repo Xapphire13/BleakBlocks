@@ -5,6 +5,7 @@ use macroquad::{prelude::*, rand::srand};
 use crate::{fps_limiter::FpsLimiter, game::Game};
 
 mod block;
+mod constants;
 mod coordinate;
 mod fps_limiter;
 mod game;

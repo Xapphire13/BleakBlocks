@@ -5,7 +5,7 @@ use macroquad::{
 };
 use strum::EnumIter;
 
-use crate::game::BACKGROUND_COLOR;
+use crate::constants::BACKGROUND_COLOR;
 
 pub enum BlockState {
     Default,

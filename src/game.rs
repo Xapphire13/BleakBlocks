@@ -9,10 +9,11 @@ use macroquad::{
     window::{clear_background, screen_height, screen_width},
 };
 
-use crate::{coordinate::Coordinate, grid_layout::GridLayout};
-
-pub const BACKGROUND_COLOR: u32 = 0x31263E;
-const GRID_MARGIN: f32 = 20.0;
+use crate::{
+    constants::{BACKGROUND_COLOR, GRID_MARGIN},
+    coordinate::Coordinate,
+    grid_layout::GridLayout,
+};
 
 enum GameState {
     Playing,
