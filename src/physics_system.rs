@@ -24,16 +24,10 @@ fn animate_column_falling(grid_layout: &mut GridLayout, col: u32, time_delta: f3
 
     for row in (0..grid_layout.rows).rev() {
         let original_grid_position = coordinate(row, col);
-        if grid_layout.blocks[original_grid_position.row as usize]
-            [original_grid_position.col as usize]
-            .is_none()
-        {
+        if grid_layout.is_empty_at(original_grid_position) {
             empty_spaces += 1;
         } else if empty_spaces > 0 {
-            if let Some(mut block) = grid_layout.blocks[original_grid_position.row as usize]
-                [original_grid_position.col as usize]
-                .take()
-            {
+            if let Some(mut block) = grid_layout.take_block(original_grid_position) {
                 let terminal_grid_position = original_grid_position + coordinate(empty_spaces, 0);
                 let terminal_world_position = grid_layout.grid_to_world(terminal_grid_position);
                 apply_force(&mut block, vec2(0.0, FORCE), time_delta);
@@ -41,15 +35,11 @@ fn animate_column_falling(grid_layout: &mut GridLayout, col: u32, time_delta: f3
                 if block.position.y >= terminal_world_position.y {
                     block.position = terminal_world_position;
                     block.velocity = Vec2::ZERO;
-                    grid_layout.blocks[terminal_grid_position.row as usize]
-                        [terminal_grid_position.col as usize]
-                        .replace(block);
+                    grid_layout.place_block(terminal_grid_position, block);
                 } else {
                     blocks_still_moving = true;
                     // Put the block back, its not in its final location yet
-                    grid_layout.blocks[original_grid_position.row as usize]
-                        [original_grid_position.col as usize]
-                        .replace(block);
+                    grid_layout.place_block(original_grid_position, block);
                 }
             }
         }
@@ -89,24 +79,17 @@ fn animate_column_shift(
         let terminal_grid_position = original_grid_position - coordinate(0, number_of_columns);
         let terminal_world_position = grid_layout.grid_to_world(terminal_grid_position);
 
-        if let Some(mut block) = grid_layout.blocks[original_grid_position.row as usize]
-            [original_grid_position.col as usize]
-            .take()
-        {
+        if let Some(mut block) = grid_layout.take_block(original_grid_position) {
             apply_force(&mut block, vec2(-FORCE, 0.0), time_delta);
 
             if block.position.x <= terminal_world_position.x {
                 block.position = terminal_world_position;
                 block.velocity = Vec2::ZERO;
-                grid_layout.blocks[terminal_grid_position.row as usize]
-                    [terminal_grid_position.col as usize]
-                    .replace(block);
+                grid_layout.place_block(terminal_grid_position, block);
             } else {
                 column_still_moving = true;
                 // Put the block back, its not in its final location yet
-                grid_layout.blocks[original_grid_position.row as usize]
-                    [original_grid_position.col as usize]
-                    .replace(block);
+                grid_layout.place_block(original_grid_position, block);
             }
         }
     }

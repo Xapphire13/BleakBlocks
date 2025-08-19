@@ -11,9 +11,9 @@ use crate::{
 pub struct GridLayout {
     pub rows: u32,
     pub cols: u32,
-    /// Rows then Columns (top to bottom)
-    pub blocks: Vec<Vec<Option<Block>>>,
     pub blocks_remaining: u32,
+    /// Rows then Columns (top to bottom)
+    blocks: Vec<Vec<Option<Block>>>,
     dimensions: Vec2,
     position: Vec2,
     block_size: f32,
@@ -165,5 +165,26 @@ impl GridLayout {
         }
 
         false
+    }
+
+    pub fn take_block(&mut self, position: Coordinate) -> Option<Block> {
+        self.blocks
+            .get_mut(position.row as usize)?
+            .get_mut(position.col as usize)?
+            .take()
+    }
+
+    pub fn place_block(&mut self, position: Coordinate, block: Block) {
+        if position.row < self.rows && position.col < self.cols {
+            self.blocks[position.row as usize][position.col as usize].replace(block);
+        }
+    }
+
+    pub fn is_empty_at(&self, position: Coordinate) -> bool {
+        if position.row < self.rows && position.col < self.cols {
+            self.blocks[position.row as usize][position.col as usize].is_none()
+        } else {
+            true // Out of bounds is considered empty
+        }
     }
 }
