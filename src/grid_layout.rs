@@ -1,12 +1,19 @@
 use std::collections::HashSet;
 
-use macroquad::{math::Vec2, rand};
+use macroquad::{
+    math::{Vec2, vec2},
+    rand,
+};
 use strum::IntoEnumIterator;
 
 use crate::{
     block::{Block, BlockState, BlockType},
     coordinate::{Coordinate, coordinate},
+    physics_system::apply_force,
 };
+
+/// Force in pixels per second^2 that is applied to moving blocks
+const FORCE: f32 = 2000.0;
 
 pub struct GridLayout {
     rows: u32,
@@ -184,7 +191,7 @@ impl GridLayout {
         false
     }
 
-    pub fn animate_falling(&mut self, elapsed_time_seconds: f32) {
+    pub fn animate_falling(&mut self, time_delta: f32) {
         for col in 0..self.cols {
             let mut empty_spaces = 0;
             for row in (0..self.rows).rev() {
@@ -202,11 +209,11 @@ impl GridLayout {
                         let terminal_grid_position =
                             original_grid_position + coordinate(empty_spaces, 0);
                         let terminal_world_position = self.grid_to_world(terminal_grid_position);
-                        block.apply_gravity(elapsed_time_seconds);
+                        apply_force(&mut block, vec2(0.0, FORCE), time_delta);
 
                         if block.position.y >= terminal_world_position.y {
                             block.position = terminal_world_position;
-                            block.set_velocity(0.0);
+                            block.velocity = Vec2::ZERO;
                             self.blocks[terminal_grid_position.row as usize]
                                 [terminal_grid_position.col as usize]
                                 .replace(block);
@@ -222,7 +229,7 @@ impl GridLayout {
         }
     }
 
-    pub fn shift_columns(&mut self, elapsed_time_seconds: f32) {
+    pub fn shift_columns(&mut self, time_delta: f32) {
         let mut empty_columns = 0;
 
         for col in 0..self.cols {
@@ -240,11 +247,11 @@ impl GridLayout {
                     [original_grid_position.col as usize]
                     .take()
                 {
-                    block.apply_gravity_left(elapsed_time_seconds);
+                    apply_force(&mut block, vec2(-FORCE, 0.0), time_delta);
 
                     if block.position.x <= terminal_world_position.x {
                         block.position = terminal_world_position;
-                        block.set_velocity(0.0);
+                        block.velocity = Vec2::ZERO;
                         self.blocks[terminal_grid_position.row as usize]
                             [terminal_grid_position.col as usize]
                             .replace(block);

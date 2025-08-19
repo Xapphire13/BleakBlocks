@@ -7,9 +7,6 @@ use strum::EnumIter;
 
 use crate::game::BACKGROUND_COLOR;
 
-/// Gravity in pixels per second^2 that is applied to falling blocks
-const GRAVITY: f32 = 2000.0;
-
 pub enum BlockState {
     Default,
     Hover,
@@ -45,9 +42,9 @@ impl BlockType {
 pub struct Block {
     pub block_type: BlockType,
     pub position: Vec2,
+    pub velocity: Vec2,
 
     size: f32,
-    velocity: f32,
 }
 
 impl Block {
@@ -56,23 +53,8 @@ impl Block {
             position,
             size,
             block_type,
-            velocity: 0.0,
+            velocity: Vec2::ZERO,
         }
-    }
-
-    pub fn apply_gravity(&mut self, elapsed_time: f32) {
-        self.position.y += self.velocity * elapsed_time;
-        self.velocity += GRAVITY * elapsed_time;
-    }
-
-    /// Similar to falling, but for shifting columns to the left
-    pub fn apply_gravity_left(&mut self, elapsed_time: f32) {
-        self.position.x -= self.velocity * elapsed_time;
-        self.velocity += GRAVITY * elapsed_time;
-    }
-
-    pub fn set_velocity(&mut self, velocity: f32) {
-        self.velocity = velocity;
     }
 
     pub fn draw(&self, state: BlockState) {

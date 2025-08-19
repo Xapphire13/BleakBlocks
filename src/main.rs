@@ -9,6 +9,7 @@ mod coordinate;
 mod fps_limiter;
 mod game;
 mod grid_layout;
+mod physics_system;
 
 fn window_conf() -> Conf {
     Conf {
