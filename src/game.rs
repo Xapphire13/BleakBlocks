@@ -10,6 +10,7 @@ use macroquad::{
 };
 
 use crate::{
+    block_renderer::render_blocks,
     constants::{BACKGROUND_COLOR, GRID_MARGIN},
     coordinate::Coordinate,
     grid_layout::GridLayout,
@@ -48,7 +49,7 @@ impl Game {
 
         match self.state {
             GameState::Playing => {
-                if self.layout.is_game_over() {
+                if self.is_game_over() {
                     self.state = GameState::GameOver;
                 } else if self.layout.has_gaps() {
                     self.state = GameState::BlocksFalling;
@@ -105,9 +106,12 @@ impl Game {
                 WHITE,
             );
         } else {
-            // Render grid with blocks
-            self.layout.draw(frame_state.hovered_blocks);
+            render_blocks(&self.layout, frame_state.hovered_blocks);
         }
+    }
+
+    fn is_game_over(&self) -> bool {
+        self.layout.blocks_remaining == 0
     }
 }
 

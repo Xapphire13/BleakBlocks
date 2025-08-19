@@ -4,7 +4,7 @@ use macroquad::{math::Vec2, rand};
 use strum::IntoEnumIterator;
 
 use crate::{
-    block::{Block, BlockState, BlockType},
+    block::{Block, BlockType},
     coordinate::{Coordinate, coordinate},
 };
 
@@ -13,10 +13,10 @@ pub struct GridLayout {
     pub cols: u32,
     /// Rows then Columns (top to bottom)
     pub blocks: Vec<Vec<Option<Block>>>,
+    pub blocks_remaining: u32,
     dimensions: Vec2,
     position: Vec2,
     block_size: f32,
-    blocks_remaining: u32,
 }
 
 impl GridLayout {
@@ -74,24 +74,7 @@ impl GridLayout {
             && point.y <= self.position.y + self.dimensions.y
     }
 
-    pub fn draw(&self, hovered_blocks: HashSet<Coordinate>) {
-        // Render blocks
-        for row in 0..self.rows {
-            for col in 0..self.cols {
-                let position = coordinate(row, col);
-                if let Some(block) = self.get_block_at_grid_position(position) {
-                    let block_state = if hovered_blocks.contains(&position) {
-                        BlockState::Hover
-                    } else {
-                        BlockState::Default
-                    };
-                    block.draw(block_state);
-                }
-            }
-        }
-    }
-
-    fn get_block_at_grid_position(&self, position: Coordinate) -> Option<&Block> {
+    pub fn get_block_at_grid_position(&self, position: Coordinate) -> Option<&Block> {
         self.blocks
             .get(position.row as usize)?
             .get(position.col as usize)?
@@ -182,9 +165,5 @@ impl GridLayout {
         }
 
         false
-    }
-
-    pub fn is_game_over(&self) -> bool {
-        self.blocks_remaining == 0
     }
 }
