@@ -1,26 +1,21 @@
 use std::collections::HashSet;
 
-use macroquad::{
-    math::{Vec2, vec2},
-    rand,
-};
+use macroquad::{math::Vec2, rand};
 use strum::IntoEnumIterator;
 
 use crate::{
     block::{Block, BlockState, BlockType},
-    constants::FORCE,
     coordinate::{Coordinate, coordinate},
-    physics_system::apply_force,
 };
 
 pub struct GridLayout {
-    rows: u32,
-    cols: u32,
+    pub rows: u32,
+    pub cols: u32,
+    /// Rows then Columns (top to bottom)
+    pub blocks: Vec<Vec<Option<Block>>>,
     dimensions: Vec2,
     position: Vec2,
     block_size: f32,
-    /// Rows then Columns (top to bottom)
-    blocks: Vec<Vec<Option<Block>>>,
     blocks_remaining: u32,
 }
 
@@ -164,7 +159,7 @@ impl GridLayout {
         false
     }
 
-    fn is_column_empty(&self, col: u32) -> bool {
+    pub fn is_column_empty(&self, col: u32) -> bool {
         for row in (0..self.rows).rev() {
             if self.blocks[row as usize][col as usize].is_some() {
                 return false;
@@ -187,81 +182,6 @@ impl GridLayout {
         }
 
         false
-    }
-
-    pub fn animate_falling(&mut self, time_delta: f32) {
-        for col in 0..self.cols {
-            let mut empty_spaces = 0;
-            for row in (0..self.rows).rev() {
-                let original_grid_position = coordinate(row, col);
-                if self.blocks[original_grid_position.row as usize]
-                    [original_grid_position.col as usize]
-                    .is_none()
-                {
-                    empty_spaces += 1;
-                } else if empty_spaces > 0 {
-                    if let Some(mut block) = self.blocks[original_grid_position.row as usize]
-                        [original_grid_position.col as usize]
-                        .take()
-                    {
-                        let terminal_grid_position =
-                            original_grid_position + coordinate(empty_spaces, 0);
-                        let terminal_world_position = self.grid_to_world(terminal_grid_position);
-                        apply_force(&mut block, vec2(0.0, FORCE), time_delta);
-
-                        if block.position.y >= terminal_world_position.y {
-                            block.position = terminal_world_position;
-                            block.velocity = Vec2::ZERO;
-                            self.blocks[terminal_grid_position.row as usize]
-                                [terminal_grid_position.col as usize]
-                                .replace(block);
-                        } else {
-                            // Put the block back, its not in its final location yet
-                            self.blocks[original_grid_position.row as usize]
-                                [original_grid_position.col as usize]
-                                .replace(block);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn shift_columns(&mut self, time_delta: f32) {
-        let mut empty_columns = 0;
-
-        for col in 0..self.cols {
-            if self.is_column_empty(col) {
-                empty_columns += 1;
-                continue;
-            }
-
-            for row in 0..self.rows {
-                let original_grid_position = coordinate(row, col);
-                let terminal_grid_position = original_grid_position - coordinate(0, empty_columns);
-                let terminal_world_position = self.grid_to_world(terminal_grid_position);
-
-                if let Some(mut block) = self.blocks[original_grid_position.row as usize]
-                    [original_grid_position.col as usize]
-                    .take()
-                {
-                    apply_force(&mut block, vec2(-FORCE, 0.0), time_delta);
-
-                    if block.position.x <= terminal_world_position.x {
-                        block.position = terminal_world_position;
-                        block.velocity = Vec2::ZERO;
-                        self.blocks[terminal_grid_position.row as usize]
-                            [terminal_grid_position.col as usize]
-                            .replace(block);
-                    } else {
-                        // Put the block back, its not in its final location yet
-                        self.blocks[original_grid_position.row as usize]
-                            [original_grid_position.col as usize]
-                            .replace(block);
-                    }
-                }
-            }
-        }
     }
 
     pub fn is_game_over(&self) -> bool {

@@ -13,6 +13,7 @@ use crate::{
     constants::{BACKGROUND_COLOR, GRID_MARGIN},
     coordinate::Coordinate,
     grid_layout::GridLayout,
+    physics_system::{animate_blocks_falling, animate_columns_shifting},
 };
 
 enum GameState {
@@ -67,7 +68,7 @@ impl Game {
             }
             GameState::GameOver => {}
             GameState::BlocksFalling => {
-                self.layout.animate_falling(get_frame_time());
+                animate_blocks_falling(&mut self.layout, get_frame_time());
 
                 self.state = if self.layout.has_gaps() {
                     GameState::BlocksFalling
@@ -78,7 +79,7 @@ impl Game {
                 };
             }
             GameState::ColumnsShifting => {
-                self.layout.shift_columns(get_frame_time());
+                animate_columns_shifting(&mut self.layout, get_frame_time());
 
                 self.state = if self.layout.columns_need_shifting() {
                     GameState::ColumnsShifting
