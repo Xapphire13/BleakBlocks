@@ -69,23 +69,23 @@ impl Game {
             }
             GameState::GameOver => {}
             GameState::BlocksFalling => {
-                animate_blocks_falling(&mut self.layout, get_frame_time());
+                let animation_complete =
+                    !animate_blocks_falling(&mut self.layout, get_frame_time());
 
-                self.state = if self.layout.has_gaps() {
-                    GameState::BlocksFalling
-                } else if self.layout.columns_need_shifting() {
-                    GameState::ColumnsShifting
-                } else {
-                    GameState::Playing
-                };
+                if animation_complete {
+                    if self.layout.columns_need_shifting() {
+                        self.state = GameState::ColumnsShifting;
+                    } else {
+                        self.state = GameState::Playing;
+                    };
+                }
             }
             GameState::ColumnsShifting => {
-                animate_columns_shifting(&mut self.layout, get_frame_time());
+                let animation_complete =
+                    !animate_columns_shifting(&mut self.layout, get_frame_time());
 
-                self.state = if self.layout.columns_need_shifting() {
-                    GameState::ColumnsShifting
-                } else {
-                    GameState::Playing
+                if animation_complete {
+                    self.state = GameState::Playing;
                 };
             }
         }
