@@ -41,12 +41,3 @@ async fn main() {
         next_frame().await
     }
 }
-
-enum GameState {
-    Playing,
-    GameOver,
-    /// Contains the time of the last update we made in this state
-    BlocksFalling(f64),
-    /// Contains the time of the last update we made in this state
-    ColumnsShifting(f64),
-}

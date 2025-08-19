@@ -5,14 +5,21 @@ use macroquad::{
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Vec2,
     text::{draw_text, measure_text},
-    time::get_time,
+    time::get_frame_time,
     window::{clear_background, screen_height, screen_width},
 };
 
-use crate::{GameState, coordinate::Coordinate, grid_layout::GridLayout};
+use crate::{coordinate::Coordinate, grid_layout::GridLayout};
 
 pub const BACKGROUND_COLOR: u32 = 0x31263E;
 const GRID_MARGIN: f32 = 20.0;
+
+enum GameState {
+    Playing,
+    GameOver,
+    BlocksFalling,
+    ColumnsShifting,
+}
 
 pub struct Game {
     state: GameState,
@@ -42,9 +49,9 @@ impl Game {
                 if self.layout.is_game_over() {
                     self.state = GameState::GameOver;
                 } else if self.layout.has_gaps() {
-                    self.state = GameState::BlocksFalling(get_time());
+                    self.state = GameState::BlocksFalling;
                 } else if self.layout.columns_need_shifting() {
-                    self.state = GameState::ColumnsShifting(get_time());
+                    self.state = GameState::ColumnsShifting;
                 } else {
                     let mouse_pos = mouse_position().into();
                     // Remove blocks when clicked
@@ -58,24 +65,22 @@ impl Game {
                 }
             }
             GameState::GameOver => {}
-            GameState::BlocksFalling(last_update) => {
-                let time_delta = get_time() - last_update;
-                self.layout.animate_falling(time_delta);
+            GameState::BlocksFalling => {
+                self.layout.animate_falling(get_frame_time());
 
                 self.state = if self.layout.has_gaps() {
-                    GameState::BlocksFalling(get_time())
+                    GameState::BlocksFalling
                 } else if self.layout.columns_need_shifting() {
-                    GameState::ColumnsShifting(get_time())
+                    GameState::ColumnsShifting
                 } else {
                     GameState::Playing
                 };
             }
-            GameState::ColumnsShifting(last_update) => {
-                let time_delta = get_time() - last_update;
-                self.layout.shift_columns(time_delta);
+            GameState::ColumnsShifting => {
+                self.layout.shift_columns(get_frame_time());
 
                 self.state = if self.layout.columns_need_shifting() {
-                    GameState::ColumnsShifting(get_time())
+                    GameState::ColumnsShifting
                 } else {
                     GameState::Playing
                 };

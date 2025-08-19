@@ -184,7 +184,7 @@ impl GridLayout {
         false
     }
 
-    pub fn animate_falling(&mut self, elapsed_time_seconds: f64) {
+    pub fn animate_falling(&mut self, elapsed_time_seconds: f32) {
         for col in 0..self.cols {
             let mut empty_spaces = 0;
             for row in (0..self.rows).rev() {
@@ -222,7 +222,7 @@ impl GridLayout {
         }
     }
 
-    pub fn shift_columns(&mut self, elapsed_time_seconds: f64) {
+    pub fn shift_columns(&mut self, elapsed_time_seconds: f32) {
         let mut empty_columns = 0;
 
         for col in 0..self.cols {
