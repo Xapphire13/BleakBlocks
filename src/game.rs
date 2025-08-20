@@ -15,6 +15,7 @@ use crate::{
     coordinate::Coordinate,
     grid_layout::GridLayout,
     physics_system::{animate_blocks_falling, animate_columns_shifting},
+    sprite_sheet::SpriteSheet,
 };
 
 enum GameState {
@@ -27,6 +28,7 @@ enum GameState {
 pub struct Game {
     state: GameState,
     layout: GridLayout,
+    sprite_sheet: SpriteSheet,
 }
 
 impl Game {
@@ -41,6 +43,7 @@ impl Game {
                 10,
                 10,
             ),
+            sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 50.0),
         }
     }
 
@@ -106,7 +109,7 @@ impl Game {
                 WHITE,
             );
         } else {
-            render_blocks(&self.layout, frame_state.hovered_blocks);
+            render_blocks(&self.layout, &self.sprite_sheet, frame_state.hovered_blocks);
         }
     }
 

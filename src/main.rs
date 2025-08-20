@@ -12,6 +12,7 @@ mod fps_limiter;
 mod game;
 mod grid_layout;
 mod physics_system;
+mod sprite_sheet;
 
 fn window_conf() -> Conf {
     Conf {
