@@ -17,6 +17,10 @@ pub mod ui {
 
     pub const PADDING_Y: f32 = 8.0;
     pub const PADDING_X: f32 = 16.0;
-    pub const BODY_TEXT_SIZE: f32 = 16.0;
-    pub const BODY_TEXT_COLOR: Color = WHITE;
+
+    // Text size
+    pub const TITLE_TEXT_SIZE: u16 = 64;
+    pub const BODY_TEXT_SIZE: u16 = 24;
+
+    pub const TEXT_COLOR: Color = WHITE;
 }

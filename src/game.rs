@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
 use macroquad::{
-    color::{Color, WHITE},
+    color::Color,
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Vec2,
-    text::{draw_text, measure_text},
     time::get_frame_time,
     window::{clear_background, screen_height, screen_width},
 };
@@ -19,7 +18,8 @@ use crate::{
     sprite_sheet::SpriteSheet,
 };
 
-enum GameState {
+#[derive(Clone)]
+pub enum GameState {
     Playing,
     GameOver,
     BlocksFalling,
@@ -105,24 +105,16 @@ impl Game {
     pub fn render(&self, frame_state: FrameState) {
         clear_background(Color::from_hex(BACKGROUND_COLOR));
 
-        if let GameState::GameOver = self.state {
-            let dimensions = measure_text("Game Over!", None, 32, 1.);
-            draw_text(
-                "Game Over!",
-                (screen_width() - dimensions.width) / 2.0,
-                (screen_height() - dimensions.height) / 2.0,
-                32.,
-                WHITE,
-            );
-        } else {
-            render_blocks(&self.layout, &self.sprite_sheet, frame_state.hovered_blocks);
-        }
-
+        render_blocks(&self.layout, &self.sprite_sheet, frame_state.hovered_blocks);
         self.ui.render(self);
     }
 
     fn is_game_over(&self) -> bool {
         self.layout.blocks_remaining == 0
+    }
+
+    pub fn state(&self) -> GameState {
+        self.state.clone()
     }
 
     pub fn blocks_remaining(&self) -> u32 {
