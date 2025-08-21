@@ -1,6 +1,8 @@
 use macroquad::math::{Vec2, vec2};
 
-use crate::{block::Block, constants::FORCE, coordinate::coordinate, grid_layout::GridLayout};
+use crate::{
+    block::Block, constants::physics::FORCE, coordinate::coordinate, grid_layout::GridLayout,
+};
 
 pub fn apply_force(block: &mut Block, force: Vec2, time_delta: f32) {
     block.position += block.velocity * time_delta;

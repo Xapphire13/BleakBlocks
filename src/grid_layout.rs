@@ -104,11 +104,12 @@ impl GridLayout {
         region
     }
 
-    pub fn remove_block_region(&mut self, start_position: Vec2) {
+    // Returns number of blocks removed
+    pub fn remove_block_region(&mut self, start_position: Vec2) -> u32 {
         let start_coordinate = self.world_to_grid(start_position);
 
         if start_coordinate.is_none() {
-            return;
+            return 0;
         }
         let start_coordinate = start_coordinate.unwrap();
 
@@ -117,11 +118,12 @@ impl GridLayout {
             .into_iter()
             .collect::<Vec<_>>();
 
-        for &Coordinate { row, col } in block_positions.iter() {
-            self.blocks[row as usize][col as usize].take();
+        for &position in block_positions.iter() {
+            self.take_block(position);
         }
 
         self.blocks_remaining -= block_positions.len() as u32;
+        block_positions.len() as u32
     }
 
     /// Returns true if there are gaps in the grid (i.e. blocks have been removed and need to be rearranged)

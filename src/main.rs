@@ -10,6 +10,7 @@ mod constants;
 mod coordinate;
 mod fps_limiter;
 mod game;
+mod game_ui;
 mod grid_layout;
 mod physics_system;
 mod sprite_sheet;

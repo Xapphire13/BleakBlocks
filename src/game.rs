@@ -11,8 +11,9 @@ use macroquad::{
 
 use crate::{
     block_renderer::render_blocks,
-    constants::{BACKGROUND_COLOR, GRID_MARGIN},
+    constants::{layout::GRID_MARGIN, style::BACKGROUND_COLOR},
     coordinate::Coordinate,
+    game_ui::GameUi,
     grid_layout::GridLayout,
     physics_system::{animate_blocks_falling, animate_columns_shifting},
     sprite_sheet::SpriteSheet,
@@ -29,6 +30,8 @@ pub struct Game {
     state: GameState,
     layout: GridLayout,
     sprite_sheet: SpriteSheet,
+    ui: GameUi,
+    score: u32,
 }
 
 impl Game {
@@ -44,6 +47,8 @@ impl Game {
                 10,
             ),
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 50.0),
+            ui: GameUi::new(),
+            score: 0,
         }
     }
 
@@ -62,7 +67,8 @@ impl Game {
                     let mouse_pos = mouse_position().into();
                     // Remove blocks when clicked
                     if is_mouse_button_pressed(MouseButton::Left) {
-                        self.layout.remove_block_region(mouse_pos);
+                        let blocks_removed = self.layout.remove_block_region(mouse_pos);
+                        self.score += blocks_removed.pow(3);
                     }
 
                     if let Some(position) = self.layout.world_to_grid(mouse_pos) {
@@ -111,10 +117,20 @@ impl Game {
         } else {
             render_blocks(&self.layout, &self.sprite_sheet, frame_state.hovered_blocks);
         }
+
+        self.ui.render(self);
     }
 
     fn is_game_over(&self) -> bool {
         self.layout.blocks_remaining == 0
+    }
+
+    pub fn blocks_remaining(&self) -> u32 {
+        self.layout.blocks_remaining
+    }
+
+    pub fn score(&self) -> u32 {
+        self.score
     }
 }
 
