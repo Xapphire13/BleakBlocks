@@ -12,11 +12,11 @@ pub struct GridLayout {
     pub rows: u32,
     pub cols: u32,
     pub blocks_remaining: u32,
+    pub dimensions: Vec2,
+    pub position: Vec2,
+    pub block_size: f32,
     /// Rows then Columns (top to bottom)
     blocks: Vec<Vec<Option<Block>>>,
-    dimensions: Vec2,
-    position: Vec2,
-    block_size: f32,
 }
 
 impl GridLayout {

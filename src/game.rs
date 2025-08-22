@@ -4,13 +4,17 @@ use macroquad::{
     color::Color,
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Vec2,
+    shapes::{draw_line, draw_rectangle},
     time::get_frame_time,
     window::{clear_background, screen_width},
 };
 
 use crate::{
     block::{Block, BlockState},
-    constants::{layout::GRID_MARGIN, style::BACKGROUND_COLOR},
+    constants::{
+        layout::GRID_MARGIN,
+        style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
+    },
     coordinate::{Coordinate, coordinate},
     game_ui::GameUi,
     grid_layout::GridLayout,
@@ -105,7 +109,11 @@ impl Game {
     pub fn render(&self, frame_state: FrameState) {
         clear_background(Color::from_hex(BACKGROUND_COLOR));
 
-        self.render_blocks(frame_state.hovered_blocks);
+        if !matches!(self.state, GameState::GameOver) {
+            self.render_grid();
+            self.render_blocks(frame_state.hovered_blocks);
+        }
+
         self.ui.render(self);
     }
 
@@ -123,6 +131,40 @@ impl Game {
 
     pub fn score(&self) -> u32 {
         self.score
+    }
+
+    fn render_grid(&self) {
+        draw_rectangle(
+            self.layout.position.x,
+            self.layout.position.y,
+            self.layout.dimensions.x,
+            self.layout.dimensions.y,
+            Color::from_hex(GRID_BACKGROUND_COLOR),
+        );
+
+        for col in 1..self.layout.cols {
+            let x = self.layout.position.x + self.layout.block_size * col as f32;
+            draw_line(
+                x,
+                self.layout.position.y,
+                x,
+                self.layout.position.y + self.layout.dimensions.y,
+                2.0,
+                Color::from_hex(BACKGROUND_COLOR),
+            );
+        }
+
+        for row in 1..self.layout.rows {
+            let y = self.layout.position.y + self.layout.block_size * row as f32;
+            draw_line(
+                self.layout.position.x,
+                y,
+                self.layout.position.x + self.layout.dimensions.x,
+                y,
+                2.0,
+                Color::from_hex(BACKGROUND_COLOR),
+            );
+        }
     }
 
     fn render_blocks(&self, hovered_blocks: HashSet<Coordinate>) {

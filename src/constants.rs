@@ -8,8 +8,8 @@ pub mod physics {
 }
 
 pub mod style {
-    // Styles
     pub const BACKGROUND_COLOR: u32 = 0x31263E;
+    pub const GRID_BACKGROUND_COLOR: u32 = 0x271E32;
 }
 
 pub mod ui {
