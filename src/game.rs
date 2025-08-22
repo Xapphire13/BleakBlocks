@@ -9,9 +9,9 @@ use macroquad::{
 };
 
 use crate::{
-    block_renderer::render_blocks,
+    block::{Block, BlockState},
     constants::{layout::GRID_MARGIN, style::BACKGROUND_COLOR},
-    coordinate::Coordinate,
+    coordinate::{Coordinate, coordinate},
     game_ui::GameUi,
     grid_layout::GridLayout,
     physics_system::{animate_blocks_falling, animate_columns_shifting},
@@ -105,7 +105,7 @@ impl Game {
     pub fn render(&self, frame_state: FrameState) {
         clear_background(Color::from_hex(BACKGROUND_COLOR));
 
-        render_blocks(&self.layout, &self.sprite_sheet, frame_state.hovered_blocks);
+        self.render_blocks(frame_state.hovered_blocks);
         self.ui.render(self);
     }
 
@@ -123,6 +123,36 @@ impl Game {
 
     pub fn score(&self) -> u32 {
         self.score
+    }
+
+    fn render_blocks(&self, hovered_blocks: HashSet<Coordinate>) {
+        // Render blocks
+        for row in 0..self.layout.rows {
+            for col in 0..self.layout.cols {
+                let position = coordinate(row, col);
+                if let Some(block) = self.layout.get_block_at_grid_position(position) {
+                    let block_state = if hovered_blocks.contains(&position) {
+                        BlockState::Hover
+                    } else {
+                        BlockState::Default
+                    };
+
+                    self.render_block(block, block_state);
+                }
+            }
+        }
+    }
+
+    fn render_block(&self, block: &Block, state: BlockState) {
+        self.sprite_sheet.render_sprite(
+            block.block_type.get_sprite_id(),
+            block.position,
+            block.size,
+            match state {
+                BlockState::Default => 1.0,
+                BlockState::Hover => 0.5,
+            },
+        );
     }
 }
 
