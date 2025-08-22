@@ -49,7 +49,7 @@ impl Game {
                 10,
                 10,
             ),
-            sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 50.0),
+            sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 45.0),
             ui: GameUi::new(),
             score: 0,
         }

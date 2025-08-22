@@ -20,6 +20,7 @@ fn window_conf() -> Conf {
         window_height: 500,
         window_width: 500,
         window_resizable: false,
+        high_dpi: true,
         ..Default::default()
     }
 }
