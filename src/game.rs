@@ -5,7 +5,7 @@ use macroquad::{
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Vec2,
     time::get_frame_time,
-    window::{clear_background, screen_height, screen_width},
+    window::{clear_background, screen_width},
 };
 
 use crate::{
@@ -36,12 +36,12 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let grid_size = screen_width().min(screen_height()) - 2. * GRID_MARGIN;
+        let grid_size = 450.0;
 
         Self {
             state: GameState::Playing,
             layout: GridLayout::new(
-                Vec2::new(GRID_MARGIN, GRID_MARGIN),
+                Vec2::new((screen_width() - grid_size) / 2.0, GRID_MARGIN),
                 Vec2::new(grid_size, grid_size),
                 10,
                 10,
