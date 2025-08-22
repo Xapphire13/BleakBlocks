@@ -71,7 +71,7 @@ impl Game {
                     // Remove blocks when clicked
                     if is_mouse_button_pressed(MouseButton::Left) {
                         let blocks_removed = self.layout.remove_block_region(mouse_pos);
-                        self.score += blocks_removed.pow(3);
+                        self.score += Game::calculate_points(blocks_removed);
                     }
 
                     if let Some(position) = self.layout.world_to_grid(mouse_pos) {
@@ -194,6 +194,11 @@ impl Game {
                 BlockState::Hover => 0.5,
             },
         );
+    }
+
+    /// Calculate points using (n-1)^2 formula
+    fn calculate_points(number_of_blocks: u32) -> u32 {
+        (number_of_blocks.saturating_sub(1)).pow(2)
     }
 }
 
