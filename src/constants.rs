@@ -8,8 +8,10 @@ pub mod physics {
 }
 
 pub mod style {
-    pub const BACKGROUND_COLOR: u32 = 0x31263E;
-    pub const GRID_BACKGROUND_COLOR: u32 = 0x271E32;
+    use macroquad::color::Color;
+
+    pub const BACKGROUND_COLOR: Color = Color::from_hex(0x31263E);
+    pub const GRID_BACKGROUND_COLOR: Color = Color::from_hex(0x271E32);
 }
 
 pub mod ui {

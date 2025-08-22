@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use macroquad::{
-    color::Color,
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Vec2,
     shapes::{draw_line, draw_rectangle},
@@ -107,7 +106,7 @@ impl Game {
     }
 
     pub fn render(&self, frame_state: FrameState) {
-        clear_background(Color::from_hex(BACKGROUND_COLOR));
+        clear_background(BACKGROUND_COLOR);
 
         if !matches!(self.state, GameState::GameOver) {
             self.render_grid();
@@ -139,7 +138,7 @@ impl Game {
             self.layout.position.y,
             self.layout.dimensions.x,
             self.layout.dimensions.y,
-            Color::from_hex(GRID_BACKGROUND_COLOR),
+            GRID_BACKGROUND_COLOR,
         );
 
         for col in 1..self.layout.cols {
@@ -150,7 +149,7 @@ impl Game {
                 x,
                 self.layout.position.y + self.layout.dimensions.y,
                 2.0,
-                Color::from_hex(BACKGROUND_COLOR),
+                BACKGROUND_COLOR,
             );
         }
 
@@ -162,7 +161,7 @@ impl Game {
                 self.layout.position.x + self.layout.dimensions.x,
                 y,
                 2.0,
-                Color::from_hex(BACKGROUND_COLOR),
+                BACKGROUND_COLOR,
             );
         }
     }
