@@ -38,7 +38,6 @@ impl BlockType {
 pub struct Block {
     pub block_type: BlockType,
     pub position: Vec2,
-    pub velocity: Vec2,
     pub size: f32,
 }
 
@@ -48,7 +47,6 @@ impl Block {
             position,
             size,
             block_type,
-            velocity: Vec2::ZERO,
         }
     }
 }

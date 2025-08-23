@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use macroquad::{
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
-    math::Vec2,
+    math::{Vec2, vec2},
     shapes::{draw_line, draw_rectangle},
     time::get_frame_time,
     window::{clear_background, screen_width},
@@ -12,12 +12,13 @@ use crate::{
     block::{Block, BlockState},
     constants::{
         layout::GRID_MARGIN,
+        physics::FORCE,
         style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
     },
     coordinate::{Coordinate, coordinate},
     game_ui::GameUi,
     grid_layout::GridLayout,
-    physics_system::{animate_blocks_falling, animate_columns_shifting},
+    physics_system::PhysicsSystem,
     sprite_sheet::SpriteSheet,
 };
 
@@ -35,6 +36,7 @@ pub struct Game {
     sprite_sheet: SpriteSheet,
     ui: GameUi,
     score: u32,
+    physics_system: PhysicsSystem,
 }
 
 impl Game {
@@ -52,6 +54,7 @@ impl Game {
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 45.0),
             ui: GameUi::new(),
             score: 0,
+            physics_system: PhysicsSystem::new(),
         }
     }
 
@@ -62,9 +65,15 @@ impl Game {
             GameState::Playing => {
                 if self.is_game_over() {
                     self.state = GameState::GameOver;
-                } else if self.layout.has_gaps() {
+                } else if let Some(falling_blocks) = self.layout.find_falling_blocks() {
+                    falling_blocks
+                        .into_iter()
+                        .for_each(|(from, to)| self.physics_system.track_block(from, to));
                     self.state = GameState::BlocksFalling;
-                } else if self.layout.columns_need_shifting() {
+                } else if let Some(shifting_blocks) = self.layout.find_shifting_blocks() {
+                    shifting_blocks
+                        .into_iter()
+                        .for_each(|(from, to)| self.physics_system.track_block(from, to));
                     self.state = GameState::ColumnsShifting;
                 } else {
                     let mouse_pos = mouse_position().into();
@@ -81,11 +90,17 @@ impl Game {
             }
             GameState::GameOver => {}
             GameState::BlocksFalling => {
-                let animation_complete =
-                    !animate_blocks_falling(&mut self.layout, get_frame_time());
+                let blocks_still_falling = self.physics_system.update(
+                    &mut self.layout,
+                    vec2(0.0, FORCE),
+                    get_frame_time(),
+                );
 
-                if animation_complete {
-                    if self.layout.columns_need_shifting() {
+                if !blocks_still_falling {
+                    if let Some(shifting_blocks) = self.layout.find_shifting_blocks() {
+                        shifting_blocks
+                            .into_iter()
+                            .for_each(|(from, to)| self.physics_system.track_block(from, to));
                         self.state = GameState::ColumnsShifting;
                     } else {
                         self.state = GameState::Playing;
@@ -93,10 +108,13 @@ impl Game {
                 }
             }
             GameState::ColumnsShifting => {
-                let animation_complete =
-                    !animate_columns_shifting(&mut self.layout, get_frame_time());
+                let blocks_still_shifting = self.physics_system.update(
+                    &mut self.layout,
+                    vec2(-FORCE, 0.0),
+                    get_frame_time(),
+                );
 
-                if animation_complete {
+                if !blocks_still_shifting {
                     self.state = GameState::Playing;
                 };
             }

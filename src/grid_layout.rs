@@ -126,22 +126,53 @@ impl GridLayout {
         block_positions.len() as u32
     }
 
-    /// Returns true if there are gaps in the grid (i.e. blocks have been removed and need to be rearranged)
-    pub fn has_gaps(&self) -> bool {
+    pub fn find_falling_blocks(&self) -> Option<Vec<(Coordinate, Coordinate)>> {
+        let mut result = vec![];
+
         for col in 0..self.cols {
-            let mut found_gap = false;
+            let mut rows_to_fall = 0u32;
 
             for row in (0..self.rows).rev() {
-                if self.blocks[row as usize][col as usize].is_none() {
-                    found_gap = true;
-                } else if found_gap {
+                let position = coordinate(row, col);
+                if self.is_empty_at(position) {
+                    rows_to_fall += 1;
+                } else if rows_to_fall > 0 {
                     // We encountered a block after a gap (the block needs to fall)
-                    return true;
+                    result.push((position, coordinate(row + rows_to_fall, col)));
                 }
             }
         }
 
-        false
+        if result.is_empty() {
+            None
+        } else {
+            Some(result)
+        }
+    }
+
+    pub fn find_shifting_blocks(&self) -> Option<Vec<(Coordinate, Coordinate)>> {
+        let mut result = vec![];
+
+        let mut columns_to_shift = 0;
+        for col in 0..self.cols {
+            if self.is_column_empty(col) {
+                columns_to_shift += 1;
+            } else if columns_to_shift > 0 {
+                // We encountered a non-empty column after an empty column (columns need to shift)
+                for row in 0..self.rows {
+                    let position = coordinate(row, col);
+                    if !self.is_empty_at(position) {
+                        result.push((position, coordinate(row, col - columns_to_shift)));
+                    }
+                }
+            }
+        }
+
+        if result.is_empty() {
+            None
+        } else {
+            Some(result)
+        }
     }
 
     pub fn is_column_empty(&self, col: u32) -> bool {
@@ -152,21 +183,6 @@ impl GridLayout {
         }
 
         true
-    }
-
-    /// Returns true if any columns need shifting due to empty columns in the grid
-    pub fn columns_need_shifting(&self) -> bool {
-        let mut found_empty_column = false;
-        for col in 0..self.cols {
-            if self.is_column_empty(col) {
-                found_empty_column = true;
-            } else if found_empty_column {
-                // We encountered a non-empty column after an empty column (columns need to shift)
-                return true;
-            }
-        }
-
-        false
     }
 
     pub fn take_block(&mut self, position: Coordinate) -> Option<Block> {
