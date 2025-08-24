@@ -19,6 +19,7 @@ use crate::{
 #[derive(Default)]
 struct UiButtons {
     menu: Option<Button>,
+    menu_items: Option<Vec<Button>>,
 }
 
 pub struct GameUi {
@@ -41,9 +42,14 @@ impl GameUi {
     }
 
     pub fn render(&self, game: &Game) {
+        set_mouse_cursor(macroquad::miniquad::CursorIcon::Default);
+
         match game.state() {
+            GameState::Playing | GameState::BlocksFalling | GameState::ColumnsShifting => {
+                self.render_overlay(game)
+            }
             GameState::GameOver => self.render_game_over(game),
-            _ => self.render_overlay(game),
+            GameState::MainMenu => self.render_main_menu(),
         }
     }
 
@@ -83,6 +89,65 @@ impl GameUi {
                             text_dimensions,
                         )
                     }),
+                    ..Default::default()
+                };
+            }
+            GameState::MainMenu => {
+                self.buttons = UiButtons {
+                    menu_items: Some(vec![
+                        {
+                            let text: &str = "New game";
+                            let text_dimensions =
+                                measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                            let x = (screen_width() - text_dimensions.width) / 2.0;
+                            let y = 100.0;
+                            Button::new(
+                                Rect::new(
+                                    x - BUTTON_PADDING.x,
+                                    y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                                    text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                                    text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                                ),
+                                text.to_owned(),
+                                text_dimensions,
+                            )
+                        },
+                        {
+                            let text: &str = "Settings";
+                            let text_dimensions =
+                                measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                            let x = (screen_width() - text_dimensions.width) / 2.0;
+                            let y = 150.0;
+                            Button::new(
+                                Rect::new(
+                                    x - BUTTON_PADDING.x,
+                                    y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                                    text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                                    text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                                ),
+                                text.to_owned(),
+                                text_dimensions,
+                            )
+                        },
+                        {
+                            let text: &str = "High scores";
+                            let text_dimensions =
+                                measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                            let x = (screen_width() - text_dimensions.width) / 2.0;
+                            let y = 200.0;
+                            Button::new(
+                                Rect::new(
+                                    x - BUTTON_PADDING.x,
+                                    y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                                    text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                                    text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                                ),
+                                text.to_owned(),
+                                text_dimensions,
+                            )
+                        },
+                    ]),
+                    ..Default::default()
                 };
             }
             GameState::GameOver => self.buttons = UiButtons::default(),
@@ -170,6 +235,29 @@ impl GameUi {
         );
     }
 
+    fn render_main_menu(&self) {
+        let text = "Bleak Blocks";
+        let dimensions = measure_text(text, Some(&self.font), TITLE_TEXT_SIZE, 1.0);
+        let y = WINDOW_PADDING.y + dimensions.height;
+        draw_text_ex(
+            text,
+            (screen_width() - dimensions.width) / 2.0,
+            y,
+            TextParams {
+                font_size: TITLE_TEXT_SIZE,
+                color: TEXT_COLOR,
+                font: Some(&self.font),
+                ..Default::default()
+            },
+        );
+
+        if let Some(menu_items) = &self.buttons.menu_items {
+            for menu_item in menu_items {
+                self.render_button(menu_item);
+            }
+        }
+    }
+
     fn render_button(&self, button: &Button) {
         if button.is_hovered() {
             set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
@@ -180,8 +268,6 @@ impl GameUi {
                 button.bounds.h,
                 LIGHTGRAY,
             );
-        } else {
-            set_mouse_cursor(macroquad::miniquad::CursorIcon::Default);
         }
         draw_rectangle_lines(
             button.bounds.x,
@@ -194,7 +280,8 @@ impl GameUi {
         draw_text_ex(
             &button.label,
             button.bounds.center().x - button.label_dimensions.width / 2.0,
-            button.bounds.bottom() - BUTTON_PADDING.y,
+            button.bounds.bottom() - BUTTON_PADDING.y - button.label_dimensions.height
+                + button.label_dimensions.offset_y,
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
