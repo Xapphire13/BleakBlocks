@@ -22,12 +22,13 @@ use crate::{
     sprite_sheet::SpriteSheet,
 };
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum GameState {
     Playing,
     GameOver,
     BlocksFalling,
     ColumnsShifting,
+    MainMenu,
 }
 
 pub struct Game {
@@ -58,37 +59,47 @@ impl Game {
         }
     }
 
-    pub fn update(&mut self) -> FrameState {
+    pub fn handle_input(&mut self) -> FrameState {
         let mut frame_state = FrameState::default();
+
+        if let Some(new_state) = self.ui.handle_input(self.state()) {
+            self.set_state(new_state);
+        }
 
         match self.state {
             GameState::Playing => {
+                if is_mouse_button_pressed(MouseButton::Left) {
+                    // Remove blocks when clicked
+                    let blocks_removed = self.layout.remove_block_region(mouse_position().into());
+                    self.score += Game::calculate_points(blocks_removed);
+                } else if let Some(position) = self.layout.world_to_grid(mouse_position().into()) {
+                    // Find hovered blocks
+                    frame_state.hovered_blocks = self.layout.get_block_region(position)
+                };
+            }
+            _ => {}
+        }
+
+        frame_state
+    }
+
+    pub fn update(&mut self) {
+        match self.state {
+            GameState::Playing => {
                 if self.is_game_over() {
-                    self.state = GameState::GameOver;
+                    self.set_state(GameState::GameOver);
                 } else if let Some(falling_blocks) = self.layout.find_falling_blocks() {
                     falling_blocks
                         .into_iter()
                         .for_each(|(from, to)| self.physics_system.queue_block_animation(from, to));
-                    self.state = GameState::BlocksFalling;
+                    self.set_state(GameState::BlocksFalling);
                 } else if let Some(shifting_blocks) = self.layout.find_shifting_blocks() {
                     shifting_blocks
                         .into_iter()
                         .for_each(|(from, to)| self.physics_system.queue_block_animation(from, to));
-                    self.state = GameState::ColumnsShifting;
-                } else {
-                    let mouse_pos = mouse_position().into();
-                    // Remove blocks when clicked
-                    if is_mouse_button_pressed(MouseButton::Left) {
-                        let blocks_removed = self.layout.remove_block_region(mouse_pos);
-                        self.score += Game::calculate_points(blocks_removed);
-                    }
-
-                    if let Some(position) = self.layout.world_to_grid(mouse_pos) {
-                        frame_state.hovered_blocks = self.layout.get_block_region(position)
-                    };
+                    self.set_state(GameState::ColumnsShifting);
                 }
             }
-            GameState::GameOver => {}
             GameState::BlocksFalling => {
                 let blocks_still_falling = self.physics_system.update(
                     &mut self.layout,
@@ -101,9 +112,9 @@ impl Game {
                         shifting_blocks.into_iter().for_each(|(from, to)| {
                             self.physics_system.queue_block_animation(from, to)
                         });
-                        self.state = GameState::ColumnsShifting;
+                        self.set_state(GameState::ColumnsShifting);
                     } else {
-                        self.state = GameState::Playing;
+                        self.set_state(GameState::Playing);
                     };
                 }
             }
@@ -115,20 +126,22 @@ impl Game {
                 );
 
                 if !blocks_still_shifting {
-                    self.state = GameState::Playing;
+                    self.set_state(GameState::Playing);
                 };
             }
+            _ => {}
         }
-
-        frame_state
     }
 
     pub fn render(&self, frame_state: FrameState) {
         clear_background(BACKGROUND_COLOR);
 
-        if !matches!(self.state, GameState::GameOver) {
-            self.render_grid();
-            self.render_blocks(frame_state.hovered_blocks);
+        match self.state {
+            GameState::Playing | GameState::BlocksFalling | GameState::ColumnsShifting => {
+                self.render_grid();
+                self.render_blocks(frame_state.hovered_blocks);
+            }
+            _ => {}
         }
 
         self.ui.render(self);
@@ -140,6 +153,11 @@ impl Game {
 
     pub fn state(&self) -> GameState {
         self.state.clone()
+    }
+
+    pub fn set_state(&mut self, state: GameState) {
+        self.state = state.clone();
+        self.ui.on_game_state_changed(state);
     }
 
     pub fn blocks_remaining(&self) -> u32 {

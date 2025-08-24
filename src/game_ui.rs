@@ -1,10 +1,12 @@
 use macroquad::{
     color::LIGHTGRAY,
-    input::mouse_position,
+    input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Rect,
     miniquad::window::set_mouse_cursor,
     shapes::{draw_rectangle, draw_rectangle_lines},
-    text::{Font, TextParams, draw_text_ex, load_ttf_font_from_bytes, measure_text},
+    text::{
+        Font, TextDimensions, TextParams, draw_text_ex, load_ttf_font_from_bytes, measure_text,
+    },
     window::{screen_height, screen_width},
 };
 use num_format::{Locale, ToFormattedString};
@@ -14,22 +16,77 @@ use crate::{
     game::{Game, GameState},
 };
 
+#[derive(Default)]
+struct UiButtons {
+    menu: Option<Button>,
+}
+
 pub struct GameUi {
     font: Font,
+    buttons: UiButtons,
 }
 
 impl GameUi {
     pub fn new() -> Self {
-        Self {
+        let mut game_ui = Self {
             font: load_ttf_font_from_bytes(include_bytes!("../assets/GrenzeGotisch-Regular.ttf"))
                 .unwrap(),
-        }
+            buttons: UiButtons::default(),
+        };
+
+        // Initial state
+        game_ui.on_game_state_changed(GameState::Playing);
+
+        game_ui
     }
 
     pub fn render(&self, game: &Game) {
         match game.state() {
             GameState::GameOver => self.render_game_over(game),
             _ => self.render_overlay(game),
+        }
+    }
+
+    pub fn handle_input(&self, game_state: GameState) -> Option<GameState> {
+        match game_state {
+            GameState::Playing => {
+                if let Some(menu_button) = &self.buttons.menu
+                    && menu_button.is_pressed()
+                {
+                    return Some(GameState::MainMenu);
+                }
+            }
+            _ => {}
+        }
+
+        None
+    }
+
+    pub fn on_game_state_changed(&mut self, game_state: GameState) {
+        match game_state {
+            GameState::Playing => {
+                self.buttons = UiButtons {
+                    menu: Some({
+                        let text: &str = "Menu";
+                        let text_dimensions =
+                            measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                        let x = (screen_width() - text_dimensions.width) / 2.0;
+                        let y = screen_height() - WINDOW_PADDING.y;
+                        Button::new(
+                            Rect::new(
+                                x - BUTTON_PADDING.x,
+                                y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                                text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                                text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                            ),
+                            text.to_owned(),
+                            text_dimensions,
+                        )
+                    }),
+                };
+            }
+            GameState::GameOver => self.buttons = UiButtons::default(),
+            _ => {}
         }
     }
 
@@ -57,47 +114,9 @@ impl GameUi {
         );
 
         // Menu button
-        let text: &str = "Menu";
-        let text_dimensions = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
-        let x = (screen_width - text_dimensions.width) / 2.0;
-        let y = screen_height - WINDOW_PADDING.y;
-        let button_rect = Rect::new(
-            x - BUTTON_PADDING.x,
-            y - text_dimensions.offset_y - BUTTON_PADDING.y,
-            text_dimensions.width + 2.0 * BUTTON_PADDING.x,
-            text_dimensions.height + 2.0 * BUTTON_PADDING.y,
-        );
-        if button_rect.contains(mouse_position().into()) {
-            set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
-            draw_rectangle(
-                button_rect.x,
-                button_rect.y,
-                button_rect.w,
-                button_rect.h,
-                LIGHTGRAY,
-            );
-        } else {
-            set_mouse_cursor(macroquad::miniquad::CursorIcon::Default);
+        if let Some(menu_button) = &self.buttons.menu {
+            self.render_button(menu_button);
         }
-        draw_rectangle_lines(
-            button_rect.x,
-            button_rect.y,
-            button_rect.w,
-            button_rect.h,
-            1.0,
-            TEXT_COLOR,
-        );
-        draw_text_ex(
-            text,
-            x,
-            y,
-            TextParams {
-                font_size: BODY_TEXT_SIZE,
-                color: TEXT_COLOR,
-                font: Some(&self.font),
-                ..Default::default()
-            },
-        );
 
         // Score
         let text = format!("Score: {}", game.score().to_formatted_string(&Locale::en));
@@ -149,5 +168,63 @@ impl GameUi {
                 ..Default::default()
             },
         );
+    }
+
+    fn render_button(&self, button: &Button) {
+        if button.is_hovered() {
+            set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
+            draw_rectangle(
+                button.bounds.x,
+                button.bounds.y,
+                button.bounds.w,
+                button.bounds.h,
+                LIGHTGRAY,
+            );
+        } else {
+            set_mouse_cursor(macroquad::miniquad::CursorIcon::Default);
+        }
+        draw_rectangle_lines(
+            button.bounds.x,
+            button.bounds.y,
+            button.bounds.w,
+            button.bounds.h,
+            1.0,
+            TEXT_COLOR,
+        );
+        draw_text_ex(
+            &button.label,
+            button.bounds.center().x - button.label_dimensions.width / 2.0,
+            button.bounds.bottom() - BUTTON_PADDING.y,
+            TextParams {
+                font_size: BODY_TEXT_SIZE,
+                color: TEXT_COLOR,
+                font: Some(&self.font),
+                ..Default::default()
+            },
+        );
+    }
+}
+
+pub struct Button {
+    bounds: Rect,
+    label: String,
+    label_dimensions: TextDimensions,
+}
+
+impl Button {
+    fn new(bounds: Rect, label: String, label_dimensions: TextDimensions) -> Self {
+        Self {
+            bounds,
+            label,
+            label_dimensions,
+        }
+    }
+
+    fn is_hovered(&self) -> bool {
+        self.bounds.contains(mouse_position().into())
+    }
+
+    fn is_pressed(&self) -> bool {
+        is_mouse_button_pressed(MouseButton::Left) && self.is_hovered()
     }
 }
