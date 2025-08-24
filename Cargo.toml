@@ -8,3 +8,8 @@ publish = false
 macroquad = "0.4.14"
 num-format = "0.4.4"
 strum = { version = "0.27.2", features = ["derive"] }
+
+[package.metadata.packager]
+product-name = "Bleak Blocks"
+identifier = "com.xapphire13.bleak-blocks"
+copyright = "Xapphire13"
