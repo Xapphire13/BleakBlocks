@@ -15,10 +15,14 @@ pub mod style {
 }
 
 pub mod ui {
-    use macroquad::color::{Color, WHITE};
+    use macroquad::{
+        color::{Color, WHITE},
+        math::{Vec2, vec2},
+    };
 
-    pub const PADDING_Y: f32 = 8.0;
-    pub const PADDING_X: f32 = 16.0;
+    // Padding
+    pub const WINDOW_PADDING: Vec2 = vec2(8.0, 16.0);
+    pub const BUTTON_PADDING: Vec2 = vec2(8.0, 4.0);
 
     // Text size
     pub const TITLE_TEXT_SIZE: u16 = 64;
