@@ -189,6 +189,7 @@ impl Game {
         for row in 0..self.layout.rows {
             for col in 0..self.layout.cols {
                 let position = coordinate(row, col);
+
                 if let Some(block) = self.layout.get_block(position) {
                     let block_state = if hovered_blocks.contains(&position) {
                         BlockState::Hover
@@ -196,16 +197,21 @@ impl Game {
                         BlockState::Default
                     };
 
-                    self.render_block(block, block_state);
+                    self.render_block(
+                        block,
+                        block_state,
+                        self.layout.grid_to_world(position)
+                            + self.physics_system.get_animation_offset(position),
+                    );
                 }
             }
         }
     }
 
-    fn render_block(&self, block: &Block, state: BlockState) {
+    fn render_block(&self, block: &Block, state: BlockState, position: Vec2) {
         self.sprite_sheet.render_sprite(
             block.block_type.get_sprite_id(),
-            block.position,
+            position,
             block.size,
             match state {
                 BlockState::Default => 1.0,

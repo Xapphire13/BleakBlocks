@@ -2,25 +2,36 @@ use std::collections::HashMap;
 
 use macroquad::math::Vec2;
 
-use crate::{block::Block, coordinate::Coordinate, grid_layout::GridLayout};
+use crate::{coordinate::Coordinate, grid_layout::GridLayout};
 
 pub struct PhysicsSystem {
-    animating_blocks: HashMap<Coordinate, Coordinate>,
-    completed_blocks: Vec<(Coordinate, Coordinate)>,
+    animating_blocks: HashMap<Coordinate, AnimationState>,
     velocity: Vec2,
+}
+
+struct AnimationState {
+    target: Coordinate,
+    offset: Vec2, // Current offset from grid position
+    completed: bool,
 }
 
 impl PhysicsSystem {
     pub fn new() -> Self {
         Self {
             animating_blocks: HashMap::new(),
-            completed_blocks: Vec::new(),
             velocity: Vec2::ZERO,
         }
     }
 
     pub fn queue_block_animation(&mut self, from: Coordinate, to: Coordinate) {
-        self.animating_blocks.insert(from, to);
+        self.animating_blocks.insert(
+            from,
+            AnimationState {
+                target: to,
+                offset: Vec2::ZERO,
+                completed: false,
+            },
+        );
     }
 
     /// Updates all animating blocks
@@ -39,74 +50,51 @@ impl PhysicsSystem {
     }
 
     fn update_block_positions(&mut self, layout: &mut GridLayout, time_delta: f32) {
-        let blocks_to_update: Vec<_> = self
-            .animating_blocks
-            .iter()
-            .map(|(from, to)| (*from, *to))
-            .collect();
+        let displacement = self.velocity * time_delta;
 
-        for (from, to) in blocks_to_update {
-            if let Some(mut block) = layout.take_block(from) {
-                block.position += self.velocity * time_delta;
+        for (from, animation_state) in &mut self.animating_blocks {
+            animation_state.offset += displacement;
 
-                if self.is_animation_complete(&block, layout, from, to) {
-                    self.complete_block_animation(from, to, block, layout);
-                } else {
-                    // Put block back, we're not done with it
-                    layout.place_block(from, block);
-                }
+            let start_pos = layout.grid_to_world(*from);
+            let target_pos = layout.grid_to_world(animation_state.target);
+            let total_distance = target_pos - start_pos;
+
+            if animation_state.offset.length() >= total_distance.length() {
+                animation_state.offset = total_distance;
+                animation_state.completed = true;
             }
         }
     }
 
-    /// Check if a block has reached its destination
-    fn is_animation_complete(
-        &self,
-        block: &Block,
-        layout: &GridLayout,
-        from: Coordinate,
-        to: Coordinate,
-    ) -> bool {
-        let start_pos = layout.grid_to_world(from);
-        let end_pos = layout.grid_to_world(to);
-        let total_distance = end_pos.distance(start_pos);
-        let current_distance = start_pos.distance(block.position);
-
-        current_distance >= total_distance
-    }
-
-    /// Mark a block animation as complete
-    fn complete_block_animation(
-        &mut self,
-        from: Coordinate,
-        to: Coordinate,
-        mut block: Block,
-        layout: &mut GridLayout,
-    ) {
-        // Snap to exact final position
-        block.position = layout.grid_to_world(to);
-
-        // Remove from active animations and queue for final placement
-        self.animating_blocks.remove(&from);
-        self.completed_blocks.push((from, to));
-
-        // Temporarily place at original position (will be moved in finalize step)
-        layout.place_block(from, block);
-    }
-
     fn finalize_completed_animations(&mut self, layout: &mut GridLayout) {
-        if self.animating_blocks.is_empty() && !self.completed_blocks.is_empty() {
+        if self
+            .animating_blocks
+            .iter()
+            .all(|(_, state)| state.completed)
+        {
             // All animations complete - reset velocity and finalize positions
             self.velocity = Vec2::ZERO;
 
+            // Remove blocks from original grid positions, then put them all into their new grid positions
             for (block, to) in self
-                .completed_blocks
-                .drain(..)
-                .flat_map(|(from, to)| layout.take_block(from).map(|block| (block, to)))
+                .animating_blocks
+                .drain()
+                .flat_map(|(current_pos, animation_state)| {
+                    layout
+                        .take_block(current_pos)
+                        .map(|block| (block, animation_state.target))
+                })
                 .collect::<Vec<_>>()
             {
                 layout.place_block(to, block);
             }
         }
+    }
+
+    pub fn get_animation_offset(&self, coord: Coordinate) -> Vec2 {
+        self.animating_blocks
+            .get(&coord)
+            .map(|anim| anim.offset)
+            .unwrap_or(Vec2::ZERO)
     }
 }

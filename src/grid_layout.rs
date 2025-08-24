@@ -27,13 +27,9 @@ impl GridLayout {
         let block_types = BlockType::iter().collect::<Vec<_>>();
 
         let mut blocks = vec![];
-        for row in 0..rows {
-            for col in 0..cols {
-                let local_position = Vec2::new(col as f32 * block_size, row as f32 * block_size);
-                let world_position = position + local_position;
-                let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
-                blocks.push(Some(Block::new(world_position, block_size, block_type)));
-            }
+        for _ in 0..(rows * cols) {
+            let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
+            blocks.push(Some(Block::new(block_size, block_type)));
         }
 
         GridLayout {
@@ -46,7 +42,7 @@ impl GridLayout {
             rows,
             cols,
             block_size,
-            blocks: blocks,
+            blocks,
             blocks_remaining: cols * rows,
         }
     }

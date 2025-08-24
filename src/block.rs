@@ -1,4 +1,3 @@
-use macroquad::math::Vec2;
 use strum::EnumIter;
 
 use crate::sprite_sheet::SpriteId;
@@ -37,16 +36,11 @@ impl BlockType {
 
 pub struct Block {
     pub block_type: BlockType,
-    pub position: Vec2,
     pub size: f32,
 }
 
 impl Block {
-    pub fn new(position: Vec2, size: f32, block_type: BlockType) -> Self {
-        Self {
-            position,
-            size,
-            block_type,
-        }
+    pub fn new(size: f32, block_type: BlockType) -> Self {
+        Self { size, block_type }
     }
 }
