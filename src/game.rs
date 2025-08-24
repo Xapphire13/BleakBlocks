@@ -189,7 +189,7 @@ impl Game {
         for row in 0..self.layout.rows {
             for col in 0..self.layout.cols {
                 let position = coordinate(row, col);
-                if let Some(block) = self.layout.get_block_at_grid_position(position) {
+                if let Some(block) = self.layout.get_block(position) {
                     let block_state = if hovered_blocks.contains(&position) {
                         BlockState::Hover
                     } else {

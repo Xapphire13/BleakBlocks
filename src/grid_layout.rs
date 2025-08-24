@@ -17,8 +17,8 @@ pub struct GridLayout {
     pub blocks_remaining: u32,
     pub block_size: f32,
     rect: Rect,
-    /// Rows then Columns (top to bottom)
-    blocks: Vec<Vec<Option<Block>>>,
+    /// Ordered row by row, top to bottom
+    blocks: Vec<Option<Block>>,
 }
 
 impl GridLayout {
@@ -26,17 +26,14 @@ impl GridLayout {
         let block_size = (dimensions.x / cols as f32).min(dimensions.y / rows as f32);
         let block_types = BlockType::iter().collect::<Vec<_>>();
 
-        let mut block_rows = vec![];
+        let mut blocks = vec![];
         for row in 0..rows {
-            let mut block_row = vec![];
-
             for col in 0..cols {
                 let local_position = Vec2::new(col as f32 * block_size, row as f32 * block_size);
                 let world_position = position + local_position;
                 let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
-                block_row.push(Some(Block::new(world_position, block_size, block_type)));
+                blocks.push(Some(Block::new(world_position, block_size, block_type)));
             }
-            block_rows.push(block_row);
         }
 
         GridLayout {
@@ -49,7 +46,7 @@ impl GridLayout {
             rows,
             cols,
             block_size,
-            blocks: block_rows,
+            blocks: blocks,
             blocks_remaining: cols * rows,
         }
     }
@@ -89,17 +86,29 @@ impl GridLayout {
         Some(coordinate(row, col))
     }
 
-    pub fn get_block_at_grid_position(&self, position: Coordinate) -> Option<&Block> {
-        self.blocks
-            .get(position.row as usize)?
-            .get(position.col as usize)?
-            .as_ref()
+    fn get_index(&self, position: Coordinate) -> usize {
+        (position.row * self.rows + position.col) as usize
+    }
+
+    pub fn get_block(&self, position: Coordinate) -> Option<&Block> {
+        let index = self.get_index(position);
+        self.blocks.get(index)?.as_ref()
+    }
+
+    pub fn take_block(&mut self, position: Coordinate) -> Option<Block> {
+        let index = self.get_index(position);
+
+        if index >= self.blocks.len() {
+            return None;
+        }
+
+        self.blocks[index].take()
     }
 
     pub fn get_block_region(&self, start: Coordinate) -> HashSet<Coordinate> {
         let mut region = HashSet::new();
         let block_type = 'block_type: {
-            if let Some(block) = self.get_block_at_grid_position(start) {
+            if let Some(block) = self.get_block(start) {
                 break 'block_type block.block_type.clone();
             } else {
                 return region;
@@ -108,7 +117,7 @@ impl GridLayout {
 
         let mut neighbors = vec![start];
         while let Some(position) = neighbors.pop() {
-            if let Some(block) = self.get_block_at_grid_position(position) {
+            if let Some(block) = self.get_block(position) {
                 if !region.contains(&position) && block.block_type == block_type {
                     neighbors.extend(position.get_neighbors(self.rows, self.cols));
                     region.insert(position);
@@ -192,7 +201,7 @@ impl GridLayout {
 
     pub fn is_column_empty(&self, col: u32) -> bool {
         for row in (0..self.rows).rev() {
-            if self.blocks[row as usize][col as usize].is_some() {
+            if self.get_block(coordinate(row, col)).is_some() {
                 return false;
             }
         }
@@ -200,24 +209,15 @@ impl GridLayout {
         true
     }
 
-    pub fn take_block(&mut self, position: Coordinate) -> Option<Block> {
-        self.blocks
-            .get_mut(position.row as usize)?
-            .get_mut(position.col as usize)?
-            .take()
-    }
-
     pub fn place_block(&mut self, position: Coordinate, block: Block) {
-        if position.row < self.rows && position.col < self.cols {
-            self.blocks[position.row as usize][position.col as usize].replace(block);
+        let index = self.get_index(position);
+
+        if index < self.blocks.len() {
+            self.blocks[index].replace(block);
         }
     }
 
     pub fn is_empty_at(&self, position: Coordinate) -> bool {
-        if position.row < self.rows && position.col < self.cols {
-            self.blocks[position.row as usize][position.col as usize].is_none()
-        } else {
-            true // Out of bounds is considered empty
-        }
+        self.get_block(position).is_none()
     }
 }
