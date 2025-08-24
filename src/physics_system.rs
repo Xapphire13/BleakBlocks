@@ -2,69 +2,111 @@ use std::collections::HashMap;
 
 use macroquad::math::Vec2;
 
-use crate::{coordinate::Coordinate, grid_layout::GridLayout};
+use crate::{block::Block, coordinate::Coordinate, grid_layout::GridLayout};
 
 pub struct PhysicsSystem {
-    tracked_blocks: HashMap<Coordinate, Coordinate>,
-    settled_blocks: HashMap<Coordinate, Coordinate>,
+    animating_blocks: HashMap<Coordinate, Coordinate>,
+    completed_blocks: Vec<(Coordinate, Coordinate)>,
     velocity: Vec2,
 }
 
 impl PhysicsSystem {
     pub fn new() -> Self {
         Self {
-            tracked_blocks: HashMap::new(),
-            settled_blocks: HashMap::new(),
+            animating_blocks: HashMap::new(),
+            completed_blocks: Vec::new(),
             velocity: Vec2::ZERO,
         }
     }
 
-    pub fn track_block(&mut self, from: Coordinate, to: Coordinate) {
-        self.tracked_blocks.insert(from, to);
+    pub fn queue_block_animation(&mut self, from: Coordinate, to: Coordinate) {
+        self.animating_blocks.insert(from, to);
     }
 
-    /// Applies force to all tracked blocks
-    /// Returns true if there are still blocks remaining to be moved
+    /// Updates all animating blocks
+    /// Returns true if animations are still in progress
     pub fn update(&mut self, layout: &mut GridLayout, force: Vec2, time_delta: f32) -> bool {
+        if self.animating_blocks.is_empty() {
+            return false;
+        }
+
         self.velocity += force * time_delta;
 
+        self.update_block_positions(layout, time_delta);
+        self.finalize_completed_animations(layout);
+
+        !self.animating_blocks.is_empty()
+    }
+
+    fn update_block_positions(&mut self, layout: &mut GridLayout, time_delta: f32) {
         let blocks_to_update: Vec<_> = self
-            .tracked_blocks
+            .animating_blocks
             .iter()
             .map(|(from, to)| (*from, *to))
             .collect();
+
         for (from, to) in blocks_to_update {
             if let Some(mut block) = layout.take_block(from) {
                 block.position += self.velocity * time_delta;
 
-                let start_pos = layout.grid_to_world(from);
-                let end_pos = layout.grid_to_world(to);
-                let total_distance = end_pos.distance(start_pos);
-                let current_distance = start_pos.distance(block.position);
-                if current_distance >= total_distance {
-                    // Travelled to (or further than) destination
-                    block.position = end_pos; // Snap to end position to prevent over-shooting
-                    // layout.place_block(to, block);
-                    self.tracked_blocks.remove(&from);
-                    self.settled_blocks.insert(from, to);
+                if self.is_animation_complete(&block, layout, from, to) {
+                    self.complete_block_animation(from, to, block, layout);
+                } else {
+                    // Put block back, we're not done with it
+                    layout.place_block(from, block);
                 }
-
-                layout.place_block(from, block);
             }
         }
+    }
 
-        if !self.tracked_blocks.is_empty() {
-            true
-        } else {
+    /// Check if a block has reached its destination
+    fn is_animation_complete(
+        &self,
+        block: &Block,
+        layout: &GridLayout,
+        from: Coordinate,
+        to: Coordinate,
+    ) -> bool {
+        let start_pos = layout.grid_to_world(from);
+        let end_pos = layout.grid_to_world(to);
+        let total_distance = end_pos.distance(start_pos);
+        let current_distance = start_pos.distance(block.position);
+
+        current_distance >= total_distance
+    }
+
+    /// Mark a block animation as complete
+    fn complete_block_animation(
+        &mut self,
+        from: Coordinate,
+        to: Coordinate,
+        mut block: Block,
+        layout: &mut GridLayout,
+    ) {
+        // Snap to exact final position
+        block.position = layout.grid_to_world(to);
+
+        // Remove from active animations and queue for final placement
+        self.animating_blocks.remove(&from);
+        self.completed_blocks.push((from, to));
+
+        // Temporarily place at original position (will be moved in finalize step)
+        layout.place_block(from, block);
+    }
+
+    fn finalize_completed_animations(&mut self, layout: &mut GridLayout) {
+        if self.animating_blocks.is_empty() && !self.completed_blocks.is_empty() {
+            // All animations complete - reset velocity and finalize positions
             self.velocity = Vec2::ZERO;
-            self.settled_blocks
-                .drain()
+
+            for (block, to) in self
+                .completed_blocks
+                .drain(..)
                 .flat_map(|(from, to)| layout.take_block(from).map(|block| (block, to)))
                 .collect::<Vec<_>>()
-                .into_iter()
-                .for_each(|(block, to)| layout.place_block(to, block));
-
-            false
+            {
+                layout.place_block(to, block);
+            }
         }
     }
 }

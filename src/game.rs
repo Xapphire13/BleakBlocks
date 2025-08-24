@@ -68,12 +68,12 @@ impl Game {
                 } else if let Some(falling_blocks) = self.layout.find_falling_blocks() {
                     falling_blocks
                         .into_iter()
-                        .for_each(|(from, to)| self.physics_system.track_block(from, to));
+                        .for_each(|(from, to)| self.physics_system.queue_block_animation(from, to));
                     self.state = GameState::BlocksFalling;
                 } else if let Some(shifting_blocks) = self.layout.find_shifting_blocks() {
                     shifting_blocks
                         .into_iter()
-                        .for_each(|(from, to)| self.physics_system.track_block(from, to));
+                        .for_each(|(from, to)| self.physics_system.queue_block_animation(from, to));
                     self.state = GameState::ColumnsShifting;
                 } else {
                     let mouse_pos = mouse_position().into();
@@ -98,9 +98,9 @@ impl Game {
 
                 if !blocks_still_falling {
                     if let Some(shifting_blocks) = self.layout.find_shifting_blocks() {
-                        shifting_blocks
-                            .into_iter()
-                            .for_each(|(from, to)| self.physics_system.track_block(from, to));
+                        shifting_blocks.into_iter().for_each(|(from, to)| {
+                            self.physics_system.queue_block_animation(from, to)
+                        });
                         self.state = GameState::ColumnsShifting;
                     } else {
                         self.state = GameState::Playing;
