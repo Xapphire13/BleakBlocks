@@ -152,31 +152,31 @@ impl Game {
 
     fn render_grid(&self) {
         draw_rectangle(
-            self.layout.position.x,
-            self.layout.position.y,
-            self.layout.dimensions.x,
-            self.layout.dimensions.y,
+            self.layout.x(),
+            self.layout.y(),
+            self.layout.width(),
+            self.layout.height(),
             GRID_BACKGROUND_COLOR,
         );
 
         for col in 1..self.layout.cols {
-            let x = self.layout.position.x + self.layout.block_size * col as f32;
+            let x = self.layout.x() + self.layout.block_size * col as f32;
             draw_line(
                 x,
-                self.layout.position.y,
+                self.layout.y(),
                 x,
-                self.layout.position.y + self.layout.dimensions.y,
+                self.layout.y() + self.layout.height(),
                 2.0,
                 BACKGROUND_COLOR,
             );
         }
 
         for row in 1..self.layout.rows {
-            let y = self.layout.position.y + self.layout.block_size * row as f32;
+            let y = self.layout.y() + self.layout.block_size * row as f32;
             draw_line(
-                self.layout.position.x,
+                self.layout.x(),
                 y,
-                self.layout.position.x + self.layout.dimensions.x,
+                self.layout.x() + self.layout.width(),
                 y,
                 2.0,
                 BACKGROUND_COLOR,

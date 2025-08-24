@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use macroquad::{math::Vec2, rand};
+use macroquad::{
+    math::{Rect, Vec2},
+    rand,
+};
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -12,9 +15,8 @@ pub struct GridLayout {
     pub rows: u32,
     pub cols: u32,
     pub blocks_remaining: u32,
-    pub dimensions: Vec2,
-    pub position: Vec2,
     pub block_size: f32,
+    rect: Rect,
     /// Rows then Columns (top to bottom)
     blocks: Vec<Vec<Option<Block>>>,
 }
@@ -38,8 +40,12 @@ impl GridLayout {
         }
 
         GridLayout {
-            position,
-            dimensions,
+            rect: Rect {
+                x: position.x,
+                y: position.y,
+                w: dimensions.x,
+                h: dimensions.y,
+            },
             rows,
             cols,
             block_size,
@@ -50,28 +56,37 @@ impl GridLayout {
 
     pub fn grid_to_world(&self, position: Coordinate) -> Vec2 {
         Vec2::new(
-            self.position.x + position.col as f32 * self.block_size,
-            self.position.y + position.row as f32 * self.block_size,
+            self.x() + position.col as f32 * self.block_size,
+            self.y() + position.row as f32 * self.block_size,
         )
     }
 
+    pub fn x(&self) -> f32 {
+        self.rect.x
+    }
+
+    pub fn y(&self) -> f32 {
+        self.rect.y
+    }
+
+    pub fn width(&self) -> f32 {
+        self.rect.w
+    }
+
+    pub fn height(&self) -> f32 {
+        self.rect.h
+    }
+
     pub fn world_to_grid(&self, world_pos: Vec2) -> Option<Coordinate> {
-        if !self.contains_point(world_pos) {
+        if !self.rect.contains(world_pos) {
             return None;
         }
 
-        let local_pos = world_pos - self.position;
+        let local_pos = world_pos - self.rect.point();
         let row = (local_pos.y / self.block_size) as u32;
         let col = (local_pos.x / self.block_size) as u32;
 
         Some(coordinate(row, col))
-    }
-
-    fn contains_point(&self, point: Vec2) -> bool {
-        point.x >= self.position.x
-            && point.x <= self.position.x + self.dimensions.x
-            && point.y >= self.position.y
-            && point.y <= self.position.y + self.dimensions.y
     }
 
     pub fn get_block_at_grid_position(&self, position: Coordinate) -> Option<&Block> {
