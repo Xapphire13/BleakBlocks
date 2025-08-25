@@ -43,6 +43,10 @@ impl GameUi {
             AppState::GameOver => self.render_game_over(game),
             AppState::MainMenu => self.render_main_menu(),
         }
+
+        for menu_item in &self.buttons {
+            self.render_button(menu_item);
+        }
     }
 
     pub fn handle_input(&self) -> Option<ButtonId> {
@@ -152,7 +156,25 @@ impl GameUi {
 
                 self.buttons = buttons;
             }
-            AppState::GameOver => self.buttons = vec![],
+            AppState::GameOver => {
+                self.buttons = vec![{
+                    let text: &str = "Menu";
+                    let text_dimensions = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                    let x = (screen_width() - text_dimensions.width) / 2.0;
+                    let y = screen_height() - WINDOW_PADDING.y;
+                    Button::new(
+                        ButtonId::Menu,
+                        Rect::new(
+                            x - BUTTON_PADDING.x,
+                            y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                            text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                            text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                        ),
+                        text.to_owned(),
+                        text_dimensions,
+                    )
+                }]
+            }
         }
     }
 
@@ -178,15 +200,6 @@ impl GameUi {
                 ..Default::default()
             },
         );
-
-        // Menu button
-        if let Some(menu_button) = &self
-            .buttons
-            .iter()
-            .find(|button| button.id == ButtonId::Menu)
-        {
-            self.render_button(menu_button);
-        }
 
         // Score
         let text = format!("Score: {}", game.score().to_formatted_string(&Locale::en));
@@ -255,10 +268,6 @@ impl GameUi {
                 ..Default::default()
             },
         );
-
-        for menu_item in &self.buttons {
-            self.render_button(menu_item);
-        }
     }
 
     fn render_button(&self, button: &Button) {

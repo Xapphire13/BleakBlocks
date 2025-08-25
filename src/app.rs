@@ -156,6 +156,10 @@ impl App {
     }
 
     pub fn set_state(&mut self, state: AppState) {
+        if self.state == AppState::GameOver && state == AppState::MainMenu {
+            self.current_session = None;
+        }
+
         self.state = state.clone();
         self.ui
             .on_game_state_changed(self.state(), self.current_session.is_some());
