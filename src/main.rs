@@ -2,13 +2,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use macroquad::{prelude::*, rand::srand};
 
-use crate::{fps_limiter::FpsLimiter, game::Game};
+use crate::{app::App, fps_limiter::FpsLimiter};
 
+mod app;
 mod block;
 mod constants;
 mod coordinate;
 mod fps_limiter;
-mod game;
+mod game_session;
 mod game_ui;
 mod grid_layout;
 mod physics_system;
@@ -36,7 +37,7 @@ async fn main() {
             % u64::MAX as u128) as u64,
     );
     let mut fps_limiter = FpsLimiter::new(60.0);
-    let mut game = Game::new();
+    let mut game = App::new();
 
     loop {
         let frame_state = game.handle_input();

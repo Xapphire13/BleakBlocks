@@ -12,73 +12,80 @@ use macroquad::{
 use num_format::{Locale, ToFormattedString};
 
 use crate::{
+    app::{App, AppState},
     constants::ui::{BODY_TEXT_SIZE, BUTTON_PADDING, TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING},
-    game::{Game, GameState},
 };
-
-#[derive(Default)]
-struct UiButtons {
-    menu: Option<Button>,
-    menu_items: Option<Vec<Button>>,
-}
 
 pub struct GameUi {
     font: Font,
-    buttons: UiButtons,
+    buttons: Vec<Button>,
 }
 
 impl GameUi {
-    pub fn new() -> Self {
+    pub fn new(app_state: AppState) -> Self {
         let mut game_ui = Self {
             font: load_ttf_font_from_bytes(include_bytes!("../assets/GrenzeGotisch-Regular.ttf"))
                 .unwrap(),
-            buttons: UiButtons::default(),
+            buttons: vec![],
         };
 
         // Initial state
-        game_ui.on_game_state_changed(GameState::Playing);
+        game_ui.on_game_state_changed(app_state, false);
 
         game_ui
     }
 
-    pub fn render(&self, game: &Game) {
+    pub fn render(&self, game: &App) {
         set_mouse_cursor(macroquad::miniquad::CursorIcon::Default);
 
         match game.state() {
-            GameState::Playing | GameState::BlocksFalling | GameState::ColumnsShifting => {
-                self.render_overlay(game)
-            }
-            GameState::GameOver => self.render_game_over(game),
-            GameState::MainMenu => self.render_main_menu(),
+            AppState::Playing => self.render_overlay(game),
+            AppState::GameOver => self.render_game_over(game),
+            AppState::MainMenu => self.render_main_menu(),
         }
     }
 
-    pub fn handle_input(&self, game_state: GameState) -> Option<GameState> {
-        match game_state {
-            GameState::Playing => {
-                if let Some(menu_button) = &self.buttons.menu
-                    && menu_button.is_pressed()
-                {
-                    return Some(GameState::MainMenu);
-                }
-            }
-            _ => {}
+    pub fn handle_input(&self) -> Option<ButtonId> {
+        if let Some(pressed_button) = self.buttons.iter().find(|button| button.is_pressed()) {
+            return Some(pressed_button.id.clone());
         }
 
         None
     }
 
-    pub fn on_game_state_changed(&mut self, game_state: GameState) {
-        match game_state {
-            GameState::Playing => {
-                self.buttons = UiButtons {
-                    menu: Some({
-                        let text: &str = "Menu";
+    pub fn on_game_state_changed(&mut self, app_state: AppState, is_existing_game: bool) {
+        match app_state {
+            AppState::Playing => {
+                self.buttons = vec![{
+                    let text: &str = "Menu";
+                    let text_dimensions = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                    let x = (screen_width() - text_dimensions.width) / 2.0;
+                    let y = screen_height() - WINDOW_PADDING.y;
+                    Button::new(
+                        ButtonId::Menu,
+                        Rect::new(
+                            x - BUTTON_PADDING.x,
+                            y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                            text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                            text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                        ),
+                        text.to_owned(),
+                        text_dimensions,
+                    )
+                }]
+            }
+            AppState::MainMenu => {
+                let mut buttons = vec![];
+
+                if is_existing_game {
+                    buttons.push({
+                        let text: &str = "Resume";
                         let text_dimensions =
                             measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
                         let x = (screen_width() - text_dimensions.width) / 2.0;
-                        let y = screen_height() - WINDOW_PADDING.y;
+                        let y = 100.0;
                         Button::new(
+                            ButtonId::Resume,
                             Rect::new(
                                 x - BUTTON_PADDING.x,
                                 y - text_dimensions.offset_y - BUTTON_PADDING.y,
@@ -88,74 +95,68 @@ impl GameUi {
                             text.to_owned(),
                             text_dimensions,
                         )
-                    }),
-                    ..Default::default()
-                };
+                    });
+                }
+
+                buttons.push({
+                    let text: &str = "New game";
+                    let text_dimensions = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                    let x = (screen_width() - text_dimensions.width) / 2.0;
+                    let y = if !is_existing_game { 100.0 } else { 150.0 };
+                    Button::new(
+                        ButtonId::NewGame,
+                        Rect::new(
+                            x - BUTTON_PADDING.x,
+                            y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                            text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                            text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                        ),
+                        text.to_owned(),
+                        text_dimensions,
+                    )
+                });
+                buttons.push({
+                    let text: &str = "Settings";
+                    let text_dimensions = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                    let x = (screen_width() - text_dimensions.width) / 2.0;
+                    let y = if !is_existing_game { 150.0 } else { 200.0 };
+                    Button::new(
+                        ButtonId::Settings,
+                        Rect::new(
+                            x - BUTTON_PADDING.x,
+                            y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                            text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                            text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                        ),
+                        text.to_owned(),
+                        text_dimensions,
+                    )
+                });
+                buttons.push({
+                    let text: &str = "High scores";
+                    let text_dimensions = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+                    let x = (screen_width() - text_dimensions.width) / 2.0;
+                    let y = if !is_existing_game { 200.0 } else { 250.0 };
+                    Button::new(
+                        ButtonId::HighScores,
+                        Rect::new(
+                            x - BUTTON_PADDING.x,
+                            y - text_dimensions.offset_y - BUTTON_PADDING.y,
+                            text_dimensions.width + 2.0 * BUTTON_PADDING.x,
+                            text_dimensions.height + 2.0 * BUTTON_PADDING.y,
+                        ),
+                        text.to_owned(),
+                        text_dimensions,
+                    )
+                });
+
+                self.buttons = buttons;
             }
-            GameState::MainMenu => {
-                self.buttons = UiButtons {
-                    menu_items: Some(vec![
-                        {
-                            let text: &str = "New game";
-                            let text_dimensions =
-                                measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
-                            let x = (screen_width() - text_dimensions.width) / 2.0;
-                            let y = 100.0;
-                            Button::new(
-                                Rect::new(
-                                    x - BUTTON_PADDING.x,
-                                    y - text_dimensions.offset_y - BUTTON_PADDING.y,
-                                    text_dimensions.width + 2.0 * BUTTON_PADDING.x,
-                                    text_dimensions.height + 2.0 * BUTTON_PADDING.y,
-                                ),
-                                text.to_owned(),
-                                text_dimensions,
-                            )
-                        },
-                        {
-                            let text: &str = "Settings";
-                            let text_dimensions =
-                                measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
-                            let x = (screen_width() - text_dimensions.width) / 2.0;
-                            let y = 150.0;
-                            Button::new(
-                                Rect::new(
-                                    x - BUTTON_PADDING.x,
-                                    y - text_dimensions.offset_y - BUTTON_PADDING.y,
-                                    text_dimensions.width + 2.0 * BUTTON_PADDING.x,
-                                    text_dimensions.height + 2.0 * BUTTON_PADDING.y,
-                                ),
-                                text.to_owned(),
-                                text_dimensions,
-                            )
-                        },
-                        {
-                            let text: &str = "High scores";
-                            let text_dimensions =
-                                measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
-                            let x = (screen_width() - text_dimensions.width) / 2.0;
-                            let y = 200.0;
-                            Button::new(
-                                Rect::new(
-                                    x - BUTTON_PADDING.x,
-                                    y - text_dimensions.offset_y - BUTTON_PADDING.y,
-                                    text_dimensions.width + 2.0 * BUTTON_PADDING.x,
-                                    text_dimensions.height + 2.0 * BUTTON_PADDING.y,
-                                ),
-                                text.to_owned(),
-                                text_dimensions,
-                            )
-                        },
-                    ]),
-                    ..Default::default()
-                };
-            }
-            GameState::GameOver => self.buttons = UiButtons::default(),
-            _ => {}
+            AppState::GameOver => self.buttons = vec![],
         }
     }
 
-    fn render_overlay(&self, game: &Game) {
+    fn render_overlay(&self, game: &App) {
         let screen_width = screen_width();
         let screen_height = screen_height();
 
@@ -179,7 +180,11 @@ impl GameUi {
         );
 
         // Menu button
-        if let Some(menu_button) = &self.buttons.menu {
+        if let Some(menu_button) = &self
+            .buttons
+            .iter()
+            .find(|button| button.id == ButtonId::Menu)
+        {
             self.render_button(menu_button);
         }
 
@@ -201,7 +206,7 @@ impl GameUi {
         );
     }
 
-    fn render_game_over(&self, game: &Game) {
+    fn render_game_over(&self, game: &App) {
         let screen_width = screen_width();
         let screen_height = screen_height();
         let text = "Game Over!";
@@ -251,10 +256,8 @@ impl GameUi {
             },
         );
 
-        if let Some(menu_items) = &self.buttons.menu_items {
-            for menu_item in menu_items {
-                self.render_button(menu_item);
-            }
+        for menu_item in &self.buttons {
+            self.render_button(menu_item);
         }
     }
 
@@ -292,15 +295,26 @@ impl GameUi {
     }
 }
 
+#[derive(PartialEq, Clone)]
+pub enum ButtonId {
+    Menu,
+    NewGame,
+    Resume,
+    Settings,
+    HighScores,
+}
+
 pub struct Button {
+    id: ButtonId,
     bounds: Rect,
     label: String,
     label_dimensions: TextDimensions,
 }
 
 impl Button {
-    fn new(bounds: Rect, label: String, label_dimensions: TextDimensions) -> Self {
+    fn new(id: ButtonId, bounds: Rect, label: String, label_dimensions: TextDimensions) -> Self {
         Self {
+            id,
             bounds,
             label,
             label_dimensions,
