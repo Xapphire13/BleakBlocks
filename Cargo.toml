@@ -13,3 +13,4 @@ strum = { version = "0.27.2", features = ["derive"] }
 product-name = "Bleak Blocks"
 identifier = "com.xapphire13.bleak-blocks"
 copyright = "Xapphire13"
+icons = ["./assets/icon_512x512.png"]
