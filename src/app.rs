@@ -42,7 +42,7 @@ impl App {
         let app_state = AppState::MainMenu;
         Self {
             state: app_state,
-            sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 45.0),
+            sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 512.0),
             ui: GameUi::new(app_state),
             current_session: None,
         }

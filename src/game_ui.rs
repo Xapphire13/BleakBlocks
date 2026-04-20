@@ -17,14 +17,19 @@ use crate::{
 };
 
 pub struct GameUi {
-    font: Font,
+    title_font: Font,
+    body_font: Font,
     buttons: Vec<Button>,
 }
 
 impl GameUi {
     pub fn new(app_state: AppState) -> Self {
         let mut game_ui = Self {
-            font: load_ttf_font_from_bytes(include_bytes!("../assets/GrenzeGotisch-Regular.ttf"))
+            title_font: load_ttf_font_from_bytes(include_bytes!(
+                "../assets/Creepster-Regular.ttf"
+            ))
+            .unwrap(),
+            body_font: load_ttf_font_from_bytes(include_bytes!("../assets/Jua-Regular.ttf"))
                 .unwrap(),
             buttons: vec![],
         };
@@ -79,7 +84,7 @@ impl GameUi {
         let mut buttons = Vec::with_capacity(items.len());
 
         for (text, id) in items {
-            let dims = measure_text(text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+            let dims = measure_text(text, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
             let x = (screen_width() - dims.width) / 2.0;
             let bounds = Rect::new(
                 x - BUTTON_PADDING.x,
@@ -109,13 +114,13 @@ impl GameUi {
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.font),
+                font: Some(&self.body_font),
                 ..Default::default()
             },
         );
 
         let text = format!("Score: {}", score.to_formatted_string(&Locale::en));
-        let text_dimensions = measure_text(&text, Some(&self.font), BODY_TEXT_SIZE, 1.0);
+        let text_dimensions = measure_text(&text, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
         draw_text_ex(
             &text,
             screen_width - WINDOW_PADDING.x - text_dimensions.width,
@@ -123,7 +128,7 @@ impl GameUi {
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.font),
+                font: Some(&self.body_font),
                 ..Default::default()
             },
         );
@@ -134,7 +139,7 @@ impl GameUi {
         let screen_height = screen_height();
 
         let text = "Game Over!";
-        let dimensions = measure_text(text, Some(&self.font), TITLE_TEXT_SIZE, 1.0);
+        let dimensions = measure_text(text, Some(&self.title_font), TITLE_TEXT_SIZE, 1.0);
         let y = (screen_height - dimensions.height) / 2.0;
         draw_text_ex(
             text,
@@ -143,21 +148,21 @@ impl GameUi {
             TextParams {
                 font_size: TITLE_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.font),
+                font: Some(&self.title_font),
                 ..Default::default()
             },
         );
 
         let text = format!("Score: {}", score.to_formatted_string(&Locale::en));
-        let dimensions = measure_text(&text, Some(&self.font), TITLE_TEXT_SIZE, 1.0);
+        let dimensions = measure_text(&text, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
         draw_text_ex(
             &text,
             (screen_width - dimensions.width) / 2.0,
             y + dimensions.height + 8.0,
             TextParams {
-                font_size: TITLE_TEXT_SIZE,
+                font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.font),
+                font: Some(&self.body_font),
                 ..Default::default()
             },
         );
@@ -165,7 +170,7 @@ impl GameUi {
 
     fn render_main_menu(&self) {
         let text = "Bleak Blocks";
-        let dimensions = measure_text(text, Some(&self.font), TITLE_TEXT_SIZE, 1.0);
+        let dimensions = measure_text(text, Some(&self.title_font), TITLE_TEXT_SIZE, 1.0);
         draw_text_ex(
             text,
             (screen_width() - dimensions.width) / 2.0,
@@ -173,7 +178,7 @@ impl GameUi {
             TextParams {
                 font_size: TITLE_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.font),
+                font: Some(&self.title_font),
                 ..Default::default()
             },
         );
@@ -206,7 +211,7 @@ impl GameUi {
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.font),
+                font: Some(&self.body_font),
                 ..Default::default()
             },
         );
