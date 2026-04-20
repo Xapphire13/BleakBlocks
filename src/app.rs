@@ -23,7 +23,7 @@ use crate::{
     sprite_sheet::SpriteSheet,
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum AppState {
     Playing,
     GameOver,
@@ -41,7 +41,7 @@ impl App {
     pub fn new() -> Self {
         let app_state = AppState::MainMenu;
         Self {
-            state: app_state.clone(),
+            state: app_state,
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 45.0),
             ui: GameUi::new(app_state),
             current_session: None,
@@ -152,11 +152,11 @@ impl App {
             }
         }
 
-        self.ui.render(self);
-    }
-
-    pub fn state(&self) -> AppState {
-        self.state.clone()
+        self.ui.render(UiContext {
+            state: self.state,
+            score: self.score(),
+            blocks_remaining: self.blocks_remaining(),
+        });
     }
 
     pub fn set_state(&mut self, state: AppState) {
@@ -164,9 +164,9 @@ impl App {
             self.current_session = None;
         }
 
-        self.state = state.clone();
+        self.state = state;
         self.ui
-            .on_game_state_changed(self.state(), self.current_session.is_some());
+            .on_game_state_changed(state, self.current_session.is_some());
     }
 
     fn render_grid(&self, session: &GameSession) {
@@ -280,6 +280,12 @@ pub enum InputEvent {
     None,
     BlockClicked(Vec2),
     UIButton(ButtonId),
+}
+
+pub struct UiContext {
+    pub state: AppState,
+    pub score: u32,
+    pub blocks_remaining: u32,
 }
 
 #[derive(Default)]
