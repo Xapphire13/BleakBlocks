@@ -48,43 +48,47 @@ impl App {
         }
     }
 
-    pub fn handle_input(&mut self) -> FrameState {
+    pub fn handle_input(&mut self) -> (InputEvent, FrameState) {
         let mut frame_state = FrameState::default();
+        let mut input_event = InputEvent::None;
 
         if self.state == AppState::Playing {
-            if let Some(session) = &mut self.current_session {
+            if let Some(session) = &self.current_session {
                 if is_mouse_button_pressed(MouseButton::Left) {
-                    // Remove blocks when clicked
-                    let blocks_removed =
-                        session.layout.remove_block_region(mouse_position().into());
-                    session.score += App::calculate_points(blocks_removed);
+                    input_event = InputEvent::BlockClicked(mouse_position().into());
                 } else if let Some(position) = session.layout.world_to_grid(mouse_position().into())
                 {
-                    // Find hovered blocks
-                    frame_state.hovered_blocks = session.layout.get_block_region(position)
-                };
+                    frame_state.hovered_blocks = session.layout.get_block_region(position);
+                }
             }
         }
 
         if let Some(button_id) = self.ui.handle_input() {
-            match button_id {
-                ButtonId::Menu => {
-                    self.set_state(AppState::MainMenu);
-                }
-                ButtonId::NewGame => {
-                    self.new_game();
-                }
-                ButtonId::Resume => {
-                    self.set_state(AppState::Playing);
-                }
-                _ => {}
-            }
+            input_event = InputEvent::UIButton(button_id);
         }
 
-        frame_state
+        (input_event, frame_state)
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, input: InputEvent) {
+        match input {
+            InputEvent::BlockClicked(pos) => {
+                if self.state == AppState::Playing {
+                    if let Some(session) = &mut self.current_session {
+                        let blocks_removed = session.layout.remove_block_region(pos);
+                        session.score += App::calculate_points(blocks_removed);
+                    }
+                }
+            }
+            InputEvent::UIButton(button_id) => match button_id {
+                ButtonId::Menu => self.set_state(AppState::MainMenu),
+                ButtonId::NewGame => self.new_game(),
+                ButtonId::Resume => self.set_state(AppState::Playing),
+                _ => {}
+            },
+            InputEvent::None => {}
+        }
+
         if self.state == AppState::Playing {
             if let Some(session) = &mut self.current_session {
                 match session.state {
@@ -270,6 +274,12 @@ impl App {
         });
         self.set_state(AppState::Playing);
     }
+}
+
+pub enum InputEvent {
+    None,
+    BlockClicked(Vec2),
+    UIButton(ButtonId),
 }
 
 #[derive(Default)]

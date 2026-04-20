@@ -41,8 +41,8 @@ async fn main() {
     let mut game = App::new();
 
     loop {
-        let frame_state = game.handle_input();
-        game.update();
+        let (input_event, frame_state) = game.handle_input();
+        game.update(input_event);
         game.render(frame_state);
 
         fps_limiter.wait_for_next_frame();

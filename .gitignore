@@ -1,4 +1,5 @@
 .DS_Store
+.claude/
 
 # Added by cargo
 /target
