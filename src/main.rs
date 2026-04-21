@@ -8,6 +8,7 @@ mod app;
 mod block;
 mod constants;
 mod coordinate;
+mod drawing;
 mod fps_limiter;
 mod game_session;
 mod game_ui;
@@ -18,7 +19,7 @@ mod sprite_sheet;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Bleak Blocks".to_owned(),
-        window_height: 600,
+        window_height: 585,
         window_width: 500,
         window_resizable: true,
         high_dpi: true,

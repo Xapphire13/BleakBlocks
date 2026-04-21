@@ -16,10 +16,12 @@ use crate::{
     constants::{
         style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
         ui::{
-            BODY_TEXT_SIZE, BUTTON_PADDING, CONTAINER_INNER_PADDING, LABEL_VALUE_GAP, TEXT_COLOR,
-            TITLE_TEXT_SIZE, WINDOW_PADDING,
+            BODY_TEXT_SIZE, BUTTON_PADDING, CARD_BORDER_COLOR, CONTAINER_INNER_PADDING,
+            CORNER_RADIUS, LABEL_TEXT_COLOR, LABEL_TEXT_SIZE, LABEL_VALUE_GAP, LABEL_VALUE_SIZE,
+            TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING,
         },
     },
+    drawing::draw_rounded_rect,
 };
 
 pub struct GameUi {
@@ -37,7 +39,7 @@ impl GameUi {
             load_ttf_font_from_bytes(include_bytes!("../assets/Jua-Regular.ttf")).unwrap();
 
         let label_dims = measure_text("A", Some(&body_font), BODY_TEXT_SIZE, 1.0);
-        let value_dims = measure_text("A", Some(&title_font), TITLE_TEXT_SIZE, 1.0);
+        let value_dims = measure_text("A", Some(&title_font), LABEL_VALUE_SIZE, 1.0);
         let status_panel_height = WINDOW_PADDING.y * 2.0
             + CONTAINER_INNER_PADDING * 2.0
             + label_dims.height
@@ -172,20 +174,29 @@ impl GameUi {
     }
 
     fn render_datum_card(&self, x: f32, y: f32, h: f32, label: &str, value: &str) -> f32 {
-        let label_dims = measure_text(label, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
-        let value_dims = measure_text(value, Some(&self.title_font), TITLE_TEXT_SIZE, 1.0);
+        let label_upper = label.to_uppercase();
+        let label_dims = measure_text(&label_upper, Some(&self.body_font), LABEL_TEXT_SIZE, 1.0);
+        let value_dims = measure_text(value, Some(&self.title_font), LABEL_VALUE_SIZE, 1.0);
         let content_w = f32::max(label_dims.width, value_dims.width);
         let card_w = content_w + CONTAINER_INNER_PADDING * 2.0;
 
-        draw_rectangle(x, y, card_w, h, BACKGROUND_COLOR);
+        draw_rounded_rect(x, y, card_w, h, CORNER_RADIUS, CARD_BORDER_COLOR);
+        draw_rounded_rect(
+            x + 1.0,
+            y + 1.0,
+            card_w - 2.0,
+            h - 2.0,
+            CORNER_RADIUS - 1.0,
+            BACKGROUND_COLOR,
+        );
 
         draw_text_ex(
-            label,
+            &label_upper,
             x + CONTAINER_INNER_PADDING,
             y + CONTAINER_INNER_PADDING + label_dims.offset_y,
             TextParams {
-                font_size: BODY_TEXT_SIZE,
-                color: TEXT_COLOR,
+                font_size: LABEL_TEXT_SIZE,
+                color: LABEL_TEXT_COLOR,
                 font: Some(&self.body_font),
                 ..Default::default()
             },
@@ -198,7 +209,7 @@ impl GameUi {
             x + CONTAINER_INNER_PADDING,
             value_y,
             TextParams {
-                font_size: TITLE_TEXT_SIZE,
+                font_size: LABEL_VALUE_SIZE,
                 color: TEXT_COLOR,
                 font: Some(&self.title_font),
                 ..Default::default()
