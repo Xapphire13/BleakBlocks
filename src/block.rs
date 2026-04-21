@@ -1,3 +1,4 @@
+use macroquad::color::Color;
 use strum::EnumIter;
 
 use crate::sprite_sheet::SpriteId;
@@ -20,6 +21,19 @@ pub enum BlockType {
 }
 
 impl BlockType {
+    pub fn get_color(&self) -> Color {
+        match self {
+            BlockType::Potion => Color::from_hex(0x40FF00),
+            BlockType::Blood => Color::from_hex(0xE01F39),
+            BlockType::Ghost => Color::from_hex(0xFFFFFF),
+            BlockType::Poison => Color::from_hex(0x9001FE),
+            BlockType::Coffin => Color::from_hex(0xAA7855),
+            BlockType::Gravestone => Color::from_hex(0x788087),
+            BlockType::Flame => Color::from_hex(0xFFA118),
+            BlockType::Brain => Color::from_hex(0xFF00F2),
+        }
+    }
+
     pub fn get_sprite_id(&self) -> SpriteId {
         match self {
             BlockType::Brain => SpriteId(0, 0),

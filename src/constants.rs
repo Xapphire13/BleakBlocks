@@ -9,6 +9,8 @@ pub mod style {
     pub const BACKGROUND_COLOR: Color = Color::from_hex(0x31263E);
     pub const GRID_BACKGROUND_COLOR: Color = Color::from_hex(0x1A1226);
     pub const EMPTY_BLOCK_COLOR: Color = Color::from_hex(0x2D2340);
+    pub const BLOCK_SHADOW_FACTOR: f32 = 0.6;
+    pub const BLOCK_INSET: f32 = 3.0;
 }
 
 pub mod ui {
@@ -18,7 +20,7 @@ pub mod ui {
     };
 
     // Padding
-    pub const WINDOW_PADDING: Vec2 = vec2(8.0, 16.0);
+    pub const WINDOW_PADDING: Vec2 = vec2(8.0, 8.0);
     pub const BUTTON_PADDING: Vec2 = vec2(8.0, 4.0);
     pub const CONTAINER_INNER_PADDING: f32 = 8.0;
     pub const BLOCK_GAP: f32 = 3.0;

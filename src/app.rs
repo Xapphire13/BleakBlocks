@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use macroquad::{
+    color::Color,
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::{Vec2, vec2},
     shapes::{draw_circle, draw_rectangle},
@@ -12,7 +13,10 @@ use crate::{
     block::{Block, BlockState},
     constants::{
         physics::FORCE,
-        style::{BACKGROUND_COLOR, EMPTY_BLOCK_COLOR, GRID_BACKGROUND_COLOR},
+        style::{
+            BACKGROUND_COLOR, BLOCK_INSET, BLOCK_SHADOW_FACTOR, EMPTY_BLOCK_COLOR,
+            GRID_BACKGROUND_COLOR,
+        },
         ui::{BLOCK_GAP, CONTAINER_INNER_PADDING, CORNER_RADIUS, WINDOW_PADDING},
     },
     coordinate::{Coordinate, coordinate},
@@ -236,14 +240,33 @@ impl App {
     }
 
     fn render_block(&self, block: &Block, state: BlockState, position: Vec2, size: f32) {
+        let darken = match state {
+            BlockState::Default => 1.0,
+            BlockState::Hover => 0.6,
+        };
+        let block_color = block.block_type.get_color();
+        let shadow_color = Color::new(
+            block_color.r * BLOCK_SHADOW_FACTOR * darken,
+            block_color.g * BLOCK_SHADOW_FACTOR * darken,
+            block_color.b * BLOCK_SHADOW_FACTOR * darken,
+            1.0,
+        );
+        let fill_color = Color::new(block_color.r * darken, block_color.g * darken, block_color.b * darken, 1.0);
+        let cell_radius = (size * 0.15).min(6.0);
+        let inner_bottom_r = cell_radius * 1.1;
+
+        draw_rounded_rect(position.x, position.y, size, size, cell_radius, shadow_color);
+        draw_rounded_rect_asymmetric(
+            position.x, position.y,
+            size, size - BLOCK_INSET,
+            cell_radius, inner_bottom_r,
+            fill_color,
+        );
         self.sprite_sheet.render_sprite(
             block.block_type.get_sprite_id(),
             position,
             size,
-            match state {
-                BlockState::Default => 1.0,
-                BlockState::Hover => 0.5,
-            },
+            Color::new(darken, darken, darken, 1.0),
         );
     }
 
@@ -311,13 +334,32 @@ pub struct FrameState {
     hovered_blocks: HashSet<Coordinate>,
 }
 
-fn draw_rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32, color: macroquad::color::Color) {
-    let r = r.min(w / 2.0).min(h / 2.0);
-    draw_rectangle(x + r, y, w - r * 2.0, h, color);
-    draw_rectangle(x, y + r, r, h - r * 2.0, color);
-    draw_rectangle(x + w - r, y + r, r, h - r * 2.0, color);
-    draw_circle(x + r, y + r, r, color);
-    draw_circle(x + w - r, y + r, r, color);
-    draw_circle(x + r, y + h - r, r, color);
-    draw_circle(x + w - r, y + h - r, r, color);
+fn draw_rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32, color: Color) {
+    draw_rounded_rect_asymmetric(x, y, w, h, r, r, color);
+}
+
+fn draw_rounded_rect_asymmetric(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    top_r: f32,
+    bottom_r: f32,
+    color: Color,
+) {
+    let top_r = top_r.min(w / 2.0).min(h / 2.0);
+    let bottom_r = bottom_r.min(w / 2.0).min(h / 2.0);
+    draw_rectangle(x, y + top_r, w, h - top_r - bottom_r, color);
+    draw_rectangle(x + top_r, y, w - top_r * 2.0, top_r, color);
+    draw_rectangle(
+        x + bottom_r,
+        y + h - bottom_r,
+        w - bottom_r * 2.0,
+        bottom_r,
+        color,
+    );
+    draw_circle(x + top_r, y + top_r, top_r, color);
+    draw_circle(x + w - top_r, y + top_r, top_r, color);
+    draw_circle(x + bottom_r, y + h - bottom_r, bottom_r, color);
+    draw_circle(x + w - bottom_r, y + h - bottom_r, bottom_r, color);
 }

@@ -25,14 +25,14 @@ impl SpriteSheet {
         }
     }
 
-    pub fn render_sprite(&self, sprite_id: SpriteId, position: Vec2, size: f32, alpha: f32) {
+    pub fn render_sprite(&self, sprite_id: SpriteId, position: Vec2, size: f32, tint: Color) {
         let SpriteId(sprite_row, sprite_col) = sprite_id;
 
         if sprite_col >= self.cols || sprite_row >= self.rows {
             panic!("Invalid sprite ID, {sprite_id:?}");
         }
 
-        let color = Color::new(1.0, 1.0, 1.0, alpha);
+        let color = tint;
 
         draw_texture_ex(
             &self.sprite_sheet,
