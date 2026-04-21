@@ -29,7 +29,7 @@ impl GridLayout {
         let mut blocks = vec![];
         for _ in 0..(rows * cols) {
             let block_type = block_types[rand::rand() as usize % block_types.len()].clone();
-            blocks.push(Some(Block::new(block_size, block_type)));
+            blocks.push(Some(Block::new(block_type)));
         }
 
         GridLayout {
@@ -45,6 +45,17 @@ impl GridLayout {
             blocks,
             blocks_remaining: cols * rows,
         }
+    }
+
+    pub fn resize(&mut self, position: Vec2, dimensions: Vec2) {
+        self.block_size = (dimensions.x / self.cols as f32)
+            .min(dimensions.y / self.rows as f32);
+        self.rect = Rect {
+            x: position.x,
+            y: position.y,
+            w: dimensions.x,
+            h: dimensions.y,
+        };
     }
 
     pub fn grid_to_world(&self, position: Coordinate) -> Vec2 {

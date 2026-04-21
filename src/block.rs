@@ -36,11 +36,10 @@ impl BlockType {
 
 pub struct Block {
     pub block_type: BlockType,
-    pub size: f32,
 }
 
 impl Block {
-    pub fn new(size: f32, block_type: BlockType) -> Self {
-        Self { size, block_type }
+    pub fn new(block_type: BlockType) -> Self {
+        Self { block_type }
     }
 }

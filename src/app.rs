@@ -3,17 +3,17 @@ use std::collections::HashSet;
 use macroquad::{
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::{Vec2, vec2},
-    shapes::{draw_line, draw_rectangle},
+    shapes::{draw_circle, draw_rectangle},
     time::get_frame_time,
-    window::{clear_background, screen_width},
+    window::{clear_background, screen_height, screen_width},
 };
 
 use crate::{
     block::{Block, BlockState},
     constants::{
-        layout::GRID_MARGIN,
         physics::FORCE,
-        style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
+        style::{BACKGROUND_COLOR, EMPTY_BLOCK_COLOR, GRID_BACKGROUND_COLOR},
+        ui::{BLOCK_GAP, CONTAINER_INNER_PADDING, CORNER_RADIUS, WINDOW_PADDING},
     },
     coordinate::{Coordinate, coordinate},
     game_session::{GameSession, GameState},
@@ -71,6 +71,16 @@ impl App {
     }
 
     pub fn update(&mut self, input: InputEvent) {
+        self.ui
+            .update_buttons(self.state, self.current_session.is_some());
+
+        // macroquad has no resize event, so we recompute layout each frame
+        if let Some(session) = &mut self.current_session {
+            let panel_h = self.ui.status_panel_height();
+            let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h);
+            session.layout.resize(pos, dims);
+        }
+
         match input {
             InputEvent::BlockClicked(pos) => {
                 if self.state == AppState::Playing {
@@ -83,6 +93,7 @@ impl App {
             InputEvent::UIButton(button_id) => match button_id {
                 ButtonId::Menu => self.set_state(AppState::MainMenu),
                 ButtonId::NewGame => self.new_game(),
+                ButtonId::Pause => self.set_state(AppState::MainMenu),
                 ButtonId::Resume => self.set_state(AppState::Playing),
                 _ => {}
             },
@@ -147,7 +158,7 @@ impl App {
 
         if self.state == AppState::Playing {
             if let Some(session) = &self.current_session {
-                self.render_grid(session);
+                self.render_grid_background(session);
                 self.render_blocks(session, frame_state.hovered_blocks);
             }
         }
@@ -166,72 +177,69 @@ impl App {
 
         self.state = state;
         self.ui
-            .on_game_state_changed(state, self.current_session.is_some());
+            .update_buttons(state, self.current_session.is_some());
     }
 
-    fn render_grid(&self, session: &GameSession) {
-        draw_rectangle(
-            session.layout.x(),
-            session.layout.y(),
-            session.layout.width(),
-            session.layout.height(),
+    fn render_grid_background(&self, session: &GameSession) {
+        draw_rounded_rect(
+            session.layout.x() - CONTAINER_INNER_PADDING,
+            session.layout.y() - CONTAINER_INNER_PADDING,
+            session.layout.width() + CONTAINER_INNER_PADDING * 2.0,
+            session.layout.height() + CONTAINER_INNER_PADDING * 2.0,
+            CORNER_RADIUS,
             GRID_BACKGROUND_COLOR,
         );
-
-        for col in 1..session.layout.cols {
-            let x = session.layout.x() + session.layout.block_size * col as f32;
-            draw_line(
-                x,
-                session.layout.y(),
-                x,
-                session.layout.y() + session.layout.height(),
-                2.0,
-                BACKGROUND_COLOR,
-            );
-        }
-
-        for row in 1..session.layout.rows {
-            let y = session.layout.y() + session.layout.block_size * row as f32;
-            draw_line(
-                session.layout.x(),
-                y,
-                session.layout.x() + session.layout.width(),
-                y,
-                2.0,
-                BACKGROUND_COLOR,
-            );
-        }
     }
 
     fn render_blocks(&self, session: &GameSession, hovered_blocks: HashSet<Coordinate>) {
-        // Render blocks
+        let block_size = session.layout.block_size;
+        let half_gap = BLOCK_GAP / 2.0;
+        let render_size = block_size - BLOCK_GAP;
+        let cell_radius = (render_size * 0.15).min(6.0);
+
+        // Pass 1: empty cell backgrounds for every cell
+        for row in 0..session.layout.rows {
+            for col in 0..session.layout.cols {
+                let world_pos = session.layout.grid_to_world(coordinate(row, col));
+                draw_rounded_rect(
+                    world_pos.x + half_gap,
+                    world_pos.y + half_gap,
+                    render_size,
+                    render_size,
+                    cell_radius,
+                    EMPTY_BLOCK_COLOR,
+                );
+            }
+        }
+
+        // Pass 2: block sprites on top
         for row in 0..session.layout.rows {
             for col in 0..session.layout.cols {
                 let position = coordinate(row, col);
-
                 if let Some(block) = session.layout.get_block(position) {
                     let block_state = if hovered_blocks.contains(&position) {
                         BlockState::Hover
                     } else {
                         BlockState::Default
                     };
-
+                    let world_pos = session.layout.grid_to_world(position);
+                    let anim_offset = session.physics_system.get_animation_offset(position);
                     self.render_block(
                         block,
                         block_state,
-                        session.layout.grid_to_world(position)
-                            + session.physics_system.get_animation_offset(position),
+                        world_pos + vec2(half_gap, half_gap) + anim_offset,
+                        render_size,
                     );
                 }
             }
         }
     }
 
-    fn render_block(&self, block: &Block, state: BlockState, position: Vec2) {
+    fn render_block(&self, block: &Block, state: BlockState, position: Vec2, size: f32) {
         self.sprite_sheet.render_sprite(
             block.block_type.get_sprite_id(),
             position,
-            block.size,
+            size,
             match state {
                 BlockState::Default => 1.0,
                 BlockState::Hover => 0.5,
@@ -259,21 +267,31 @@ impl App {
     }
 
     pub fn new_game(&mut self) {
-        let grid_size = 450.0;
-
+        let panel_h = self.ui.status_panel_height();
+        let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h);
         self.current_session = Some(GameSession {
             state: GameState::Playing,
-            layout: GridLayout::new(
-                Vec2::new((screen_width() - grid_size) / 2.0, GRID_MARGIN),
-                Vec2::new(grid_size, grid_size),
-                10,
-                10,
-            ),
+            layout: GridLayout::new(pos, dims, 10, 10),
             score: 0,
             physics_system: PhysicsSystem::new(),
         });
         self.set_state(AppState::Playing);
     }
+}
+
+fn compute_grid_rect(screen_w: f32, screen_h: f32, status_panel_h: f32) -> (Vec2, Vec2) {
+    let panel_y = screen_h - status_panel_h;
+    let container_x = WINDOW_PADDING.x;
+    let container_y = WINDOW_PADDING.y;
+    let container_w = screen_w - WINDOW_PADDING.x * 2.0;
+    let container_h = panel_y - WINDOW_PADDING.y - container_y;
+    let grid_size = f32::min(
+        container_w - CONTAINER_INNER_PADDING * 2.0,
+        container_h - CONTAINER_INNER_PADDING * 2.0,
+    );
+    let grid_x = container_x + (container_w - grid_size) / 2.0;
+    let grid_y = container_y + CONTAINER_INNER_PADDING;
+    (Vec2::new(grid_x, grid_y), Vec2::new(grid_size, grid_size))
 }
 
 pub enum InputEvent {
@@ -291,4 +309,15 @@ pub struct UiContext {
 #[derive(Default)]
 pub struct FrameState {
     hovered_blocks: HashSet<Coordinate>,
+}
+
+fn draw_rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32, color: macroquad::color::Color) {
+    let r = r.min(w / 2.0).min(h / 2.0);
+    draw_rectangle(x + r, y, w - r * 2.0, h, color);
+    draw_rectangle(x, y + r, r, h - r * 2.0, color);
+    draw_rectangle(x + w - r, y + r, r, h - r * 2.0, color);
+    draw_circle(x + r, y + r, r, color);
+    draw_circle(x + w - r, y + r, r, color);
+    draw_circle(x + r, y + h - r, r, color);
+    draw_circle(x + w - r, y + h - r, r, color);
 }

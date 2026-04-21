@@ -20,7 +20,7 @@ fn window_conf() -> Conf {
         window_title: "Bleak Blocks".to_owned(),
         window_height: 500,
         window_width: 500,
-        window_resizable: false,
+        window_resizable: true,
         high_dpi: true,
         icon: None,
         ..Default::default()

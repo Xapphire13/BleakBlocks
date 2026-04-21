@@ -13,37 +13,58 @@ use num_format::{Locale, ToFormattedString};
 
 use crate::{
     app::{AppState, UiContext},
-    constants::ui::{BODY_TEXT_SIZE, BUTTON_PADDING, TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING},
+    constants::{
+        style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
+        ui::{
+            BODY_TEXT_SIZE, BUTTON_PADDING, CONTAINER_INNER_PADDING, LABEL_VALUE_GAP, TEXT_COLOR,
+            TITLE_TEXT_SIZE, WINDOW_PADDING,
+        },
+    },
 };
 
 pub struct GameUi {
     title_font: Font,
     body_font: Font,
     buttons: Vec<Button>,
+    status_panel_height: f32,
 }
 
 impl GameUi {
     pub fn new(app_state: AppState) -> Self {
+        let title_font =
+            load_ttf_font_from_bytes(include_bytes!("../assets/Creepster-Regular.ttf")).unwrap();
+        let body_font =
+            load_ttf_font_from_bytes(include_bytes!("../assets/Jua-Regular.ttf")).unwrap();
+
+        let label_dims = measure_text("A", Some(&body_font), BODY_TEXT_SIZE, 1.0);
+        let value_dims = measure_text("A", Some(&title_font), TITLE_TEXT_SIZE, 1.0);
+        let status_panel_height = WINDOW_PADDING.y * 2.0
+            + CONTAINER_INNER_PADDING * 2.0
+            + label_dims.height
+            + LABEL_VALUE_GAP
+            + value_dims.height;
+
         let mut game_ui = Self {
-            title_font: load_ttf_font_from_bytes(include_bytes!(
-                "../assets/Creepster-Regular.ttf"
-            ))
-            .unwrap(),
-            body_font: load_ttf_font_from_bytes(include_bytes!("../assets/Jua-Regular.ttf"))
-                .unwrap(),
+            title_font,
+            body_font,
             buttons: vec![],
+            status_panel_height,
         };
 
-        game_ui.on_game_state_changed(app_state, false);
+        game_ui.update_buttons(app_state, false);
 
         game_ui
+    }
+
+    pub fn status_panel_height(&self) -> f32 {
+        self.status_panel_height
     }
 
     pub fn render(&self, ctx: UiContext) {
         set_mouse_cursor(macroquad::miniquad::CursorIcon::Default);
 
         match ctx.state {
-            AppState::Playing => self.render_overlay(ctx.blocks_remaining, ctx.score),
+            AppState::Playing => self.render_status_panel(ctx.blocks_remaining, ctx.score),
             AppState::GameOver => self.render_game_over(ctx.score),
             AppState::MainMenu => self.render_main_menu(),
         }
@@ -60,9 +81,25 @@ impl GameUi {
             .map(|button| button.id.clone())
     }
 
-    pub fn on_game_state_changed(&mut self, app_state: AppState, is_existing_game: bool) {
+    pub fn update_buttons(&mut self, app_state: AppState, is_existing_game: bool) {
         self.buttons = match app_state {
-            AppState::Playing | AppState::GameOver => {
+            AppState::Playing => {
+                let panel_y = screen_height() - self.status_panel_height;
+                let pause_label = "||";
+                let pause_dims =
+                    measure_text(pause_label, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
+                let btn_w = pause_dims.width + BUTTON_PADDING.x * 2.0;
+                let btn_h = pause_dims.height + BUTTON_PADDING.y * 2.0;
+                let btn_x = screen_width() - WINDOW_PADDING.x - btn_w;
+                let btn_y = panel_y + (self.status_panel_height - btn_h) / 2.0;
+                vec![Button::new(
+                    ButtonId::Pause,
+                    Rect::new(btn_x, btn_y, btn_w, btn_h),
+                    pause_label.to_string(),
+                    pause_dims,
+                )]
+            }
+            AppState::GameOver => {
                 let y = screen_height() - WINDOW_PADDING.y;
                 self.layout_buttons(&[("Menu", ButtonId::Menu)], y)
             }
@@ -99,18 +136,53 @@ impl GameUi {
         buttons
     }
 
-    fn render_overlay(&self, blocks_remaining: u32, score: u32) {
+    fn render_status_panel(&self, blocks_remaining: u32, score: u32) {
         let screen_width = screen_width();
         let screen_height = screen_height();
+        let panel_y = screen_height - self.status_panel_height;
 
-        let text = format!(
-            "Blocks remaining: {}",
-            blocks_remaining.to_formatted_string(&Locale::en)
+        draw_rectangle(
+            0.0,
+            panel_y,
+            screen_width,
+            self.status_panel_height,
+            GRID_BACKGROUND_COLOR,
         );
+
+        let card_y = panel_y + WINDOW_PADDING.y;
+        let card_h = self.status_panel_height - WINDOW_PADDING.y * 2.0;
+        let mut card_x = WINDOW_PADDING.x;
+
+        card_x = self.render_datum_card(
+            card_x,
+            card_y,
+            card_h,
+            "Blocks left",
+            &blocks_remaining.to_formatted_string(&Locale::en),
+        );
+        card_x += WINDOW_PADDING.x;
+
+        self.render_datum_card(
+            card_x,
+            card_y,
+            card_h,
+            "Score",
+            &score.to_formatted_string(&Locale::en),
+        );
+    }
+
+    fn render_datum_card(&self, x: f32, y: f32, h: f32, label: &str, value: &str) -> f32 {
+        let label_dims = measure_text(label, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
+        let value_dims = measure_text(value, Some(&self.title_font), TITLE_TEXT_SIZE, 1.0);
+        let content_w = f32::max(label_dims.width, value_dims.width);
+        let card_w = content_w + CONTAINER_INNER_PADDING * 2.0;
+
+        draw_rectangle(x, y, card_w, h, BACKGROUND_COLOR);
+
         draw_text_ex(
-            &text,
-            WINDOW_PADDING.x,
-            screen_height - WINDOW_PADDING.y,
+            label,
+            x + CONTAINER_INNER_PADDING,
+            y + CONTAINER_INNER_PADDING + label_dims.offset_y,
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
@@ -119,19 +191,21 @@ impl GameUi {
             },
         );
 
-        let text = format!("Score: {}", score.to_formatted_string(&Locale::en));
-        let text_dimensions = measure_text(&text, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
+        let value_y =
+            y + CONTAINER_INNER_PADDING + label_dims.height + LABEL_VALUE_GAP + value_dims.offset_y;
         draw_text_ex(
-            &text,
-            screen_width - WINDOW_PADDING.x - text_dimensions.width,
-            screen_height - WINDOW_PADDING.y,
+            value,
+            x + CONTAINER_INNER_PADDING,
+            value_y,
             TextParams {
-                font_size: BODY_TEXT_SIZE,
+                font_size: TITLE_TEXT_SIZE,
                 color: TEXT_COLOR,
-                font: Some(&self.body_font),
+                font: Some(&self.title_font),
                 ..Default::default()
             },
         );
+
+        x + card_w
     }
 
     fn render_game_over(&self, score: u32) {
@@ -222,6 +296,7 @@ impl GameUi {
 pub enum ButtonId {
     Menu,
     NewGame,
+    Pause,
     Resume,
     Settings,
     HighScores,
