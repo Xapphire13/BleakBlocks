@@ -21,13 +21,14 @@ pub mod ui {
 
     // Padding
     pub const WINDOW_PADDING: Vec2 = vec2(8.0, 8.0);
-    pub const BUTTON_PADDING: Vec2 = vec2(8.0, 4.0);
+    pub const BUTTON_PADDING: Vec2 = vec2(16.0, 8.0);
     pub const CONTAINER_INNER_PADDING: f32 = 8.0;
     pub const BLOCK_GAP: f32 = 3.0;
 
     // Text size
     pub const TITLE_TEXT_SIZE: u16 = 64;
     pub const BODY_TEXT_SIZE: u16 = 24;
+    pub const PAUSE_ICON_SIZE: u16 = 48;
     pub const LABEL_TEXT_SIZE: u16 = 16;
     pub const LABEL_VALUE_SIZE: u16 = 32;
     pub const LABEL_VALUE_GAP: f32 = 10.0;
@@ -38,4 +39,9 @@ pub mod ui {
     pub const TEXT_COLOR: Color = WHITE;
     pub const LABEL_TEXT_COLOR: Color = Color::new(1.0, 1.0, 1.0, 0.55);
     pub const CARD_BORDER_COLOR: Color = Color::from_hex(0x4E3F63);
+    pub const BUTTON_BACKGROUND_COLOR: Color = Color::from_hex(0x271E32); // BACKGROUND_COLOR ~20% darker
+    pub const BUTTON_SHADOW_COLOR: Color = Color::from_hex(0x0C0A14);
+    pub const PRIMARY_BUTTON_COLOR: Color = Color::from_hex(0x9001FE);
+    pub const PRIMARY_BUTTON_HOVER_COLOR: Color = Color::from_hex(0xAA30FE);
+    pub const PRIMARY_BUTTON_SHADOW_COLOR: Color = Color::from_hex(0x560198); // PRIMARY_BUTTON_COLOR * 0.6
 }

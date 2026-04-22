@@ -1,9 +1,8 @@
 use macroquad::{
-    color::LIGHTGRAY,
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::Rect,
     miniquad::window::set_mouse_cursor,
-    shapes::{draw_rectangle, draw_rectangle_lines},
+    shapes::draw_rectangle,
     text::{
         Font, TextDimensions, TextParams, draw_text_ex, load_ttf_font_from_bytes, measure_text,
     },
@@ -14,10 +13,12 @@ use num_format::{Locale, ToFormattedString};
 use crate::{
     app::{AppState, UiContext},
     constants::{
-        style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
+        style::{BACKGROUND_COLOR, BLOCK_INSET, GRID_BACKGROUND_COLOR},
         ui::{
-            BODY_TEXT_SIZE, BUTTON_PADDING, CARD_BORDER_COLOR, CONTAINER_INNER_PADDING,
-            CORNER_RADIUS, LABEL_TEXT_COLOR, LABEL_TEXT_SIZE, LABEL_VALUE_GAP, LABEL_VALUE_SIZE,
+            BODY_TEXT_SIZE, BUTTON_BACKGROUND_COLOR, BUTTON_PADDING, BUTTON_SHADOW_COLOR,
+            CARD_BORDER_COLOR, CONTAINER_INNER_PADDING, CORNER_RADIUS, LABEL_TEXT_COLOR,
+            LABEL_TEXT_SIZE, LABEL_VALUE_GAP, LABEL_VALUE_SIZE, PAUSE_ICON_SIZE,
+            PRIMARY_BUTTON_COLOR, PRIMARY_BUTTON_HOVER_COLOR, PRIMARY_BUTTON_SHADOW_COLOR,
             TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING,
         },
     },
@@ -87,52 +88,75 @@ impl GameUi {
         self.buttons = match app_state {
             AppState::Playing => {
                 let panel_y = screen_height() - self.status_panel_height;
+                let card_h = self.status_panel_height - WINDOW_PADDING.y * 2.0;
                 let pause_label = "||";
                 let pause_dims =
-                    measure_text(pause_label, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
-                let btn_w = pause_dims.width + BUTTON_PADDING.x * 2.0;
-                let btn_h = pause_dims.height + BUTTON_PADDING.y * 2.0;
+                    measure_text(pause_label, Some(&self.title_font), PAUSE_ICON_SIZE, 1.0);
+                // Square face matching card height; shadow extends below the face
+                let btn_w = card_h;
+                let btn_h = card_h + BLOCK_INSET;
                 let btn_x = screen_width() - WINDOW_PADDING.x - btn_w;
-                let btn_y = panel_y + (self.status_panel_height - btn_h) / 2.0;
+                let btn_y = panel_y + WINDOW_PADDING.y;
                 vec![Button::new(
                     ButtonId::Pause,
                     Rect::new(btn_x, btn_y, btn_w, btn_h),
                     pause_label.to_string(),
                     pause_dims,
+                    PAUSE_ICON_SIZE,
+                    false,
                 )]
             }
             AppState::GameOver => {
                 let y = screen_height() - WINDOW_PADDING.y;
-                self.layout_buttons(&[("Menu", ButtonId::Menu)], y)
+                self.layout_buttons(&[("Menu", ButtonId::Menu, false)], y)
             }
             AppState::MainMenu => {
-                let mut items: Vec<(&str, ButtonId)> = vec![];
+                let mut items: Vec<(&str, ButtonId, bool)> = vec![];
                 if is_existing_game {
-                    items.push(("Resume", ButtonId::Resume));
+                    items.push(("Resume", ButtonId::Resume, true));
+                    items.push(("New game", ButtonId::NewGame, false));
+                } else {
+                    items.push(("New game", ButtonId::NewGame, true));
                 }
-                items.push(("New game", ButtonId::NewGame));
-                items.push(("Settings", ButtonId::Settings));
-                items.push(("High scores", ButtonId::HighScores));
-                self.layout_buttons(&items, 100.0)
+                items.push(("Settings", ButtonId::Settings, false));
+                items.push(("High scores", ButtonId::HighScores, false));
+                self.layout_buttons(&items, 125.0)
             }
         };
     }
 
-    fn layout_buttons(&self, items: &[(&str, ButtonId)], start_y: f32) -> Vec<Button> {
+    fn layout_buttons(&self, items: &[(&str, ButtonId, bool)], start_y: f32) -> Vec<Button> {
+        let measurements: Vec<TextDimensions> = items
+            .iter()
+            .map(|(text, _, _)| measure_text(text, Some(&self.title_font), BODY_TEXT_SIZE, 1.0))
+            .collect();
+
+        let max_btn_w = measurements
+            .iter()
+            .map(|d| d.width + 2.0 * BUTTON_PADDING.x)
+            .fold(0.0f32, f32::max);
+
+        let center_x = screen_width() / 2.0;
         let mut y = start_y;
         let mut buttons = Vec::with_capacity(items.len());
 
-        for (text, id) in items {
-            let dims = measure_text(text, Some(&self.body_font), BODY_TEXT_SIZE, 1.0);
-            let x = (screen_width() - dims.width) / 2.0;
+        for ((text, id, is_primary), dims) in items.iter().zip(measurements.iter()) {
+            let face_h = dims.height + 2.0 * BUTTON_PADDING.y;
             let bounds = Rect::new(
-                x - BUTTON_PADDING.x,
+                center_x - max_btn_w / 2.0,
                 y - dims.offset_y - BUTTON_PADDING.y,
-                dims.width + 2.0 * BUTTON_PADDING.x,
-                dims.height + 2.0 * BUTTON_PADDING.y,
+                max_btn_w,
+                face_h + BLOCK_INSET,
             );
-            buttons.push(Button::new(id.clone(), bounds, text.to_string(), dims));
-            y += dims.height + 2.0 * BUTTON_PADDING.y + 8.0;
+            buttons.push(Button::new(
+                id.clone(),
+                bounds,
+                text.to_string(),
+                *dims,
+                BODY_TEXT_SIZE,
+                *is_primary,
+            ));
+            y += face_h + BLOCK_INSET + 8.0;
         }
 
         buttons
@@ -270,33 +294,68 @@ impl GameUi {
     }
 
     fn render_button(&self, button: &Button) {
-        if button.is_hovered() {
+        let (border_color, fill_color, hover_color, shadow_color) = if button.is_primary {
+            (
+                PRIMARY_BUTTON_COLOR,
+                PRIMARY_BUTTON_COLOR,
+                PRIMARY_BUTTON_HOVER_COLOR,
+                PRIMARY_BUTTON_SHADOW_COLOR,
+            )
+        } else {
+            (
+                CARD_BORDER_COLOR,
+                BUTTON_BACKGROUND_COLOR,
+                CARD_BORDER_COLOR,
+                BUTTON_SHADOW_COLOR,
+            )
+        };
+
+        let fill = if button.is_hovered() {
             set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
-            draw_rectangle(
-                button.bounds.x,
-                button.bounds.y,
-                button.bounds.w,
-                button.bounds.h,
-                LIGHTGRAY,
-            );
-        }
-        draw_rectangle_lines(
+            hover_color
+        } else {
+            fill_color
+        };
+
+        let face_h = button.bounds.h - BLOCK_INSET;
+
+        // Shadow strip (full height)
+        draw_rounded_rect(
             button.bounds.x,
             button.bounds.y,
             button.bounds.w,
             button.bounds.h,
-            1.0,
-            TEXT_COLOR,
+            CORNER_RADIUS,
+            shadow_color,
         );
+        // Border (face height only, so shadow strip shows at bottom)
+        draw_rounded_rect(
+            button.bounds.x,
+            button.bounds.y,
+            button.bounds.w,
+            face_h,
+            CORNER_RADIUS,
+            border_color,
+        );
+        // Fill (1px inset from border)
+        draw_rounded_rect(
+            button.bounds.x + 1.0,
+            button.bounds.y + 1.0,
+            button.bounds.w - 2.0,
+            face_h - 2.0,
+            CORNER_RADIUS - 1.0,
+            fill,
+        );
+
+        let face_center_y = button.bounds.y + face_h / 2.0;
         draw_text_ex(
             &button.label,
             button.bounds.center().x - button.label_dimensions.width / 2.0,
-            button.bounds.bottom() - BUTTON_PADDING.y - button.label_dimensions.height
-                + button.label_dimensions.offset_y,
+            face_center_y - button.label_dimensions.height / 2.0 + button.label_dimensions.offset_y,
             TextParams {
-                font_size: BODY_TEXT_SIZE,
+                font_size: button.font_size,
                 color: TEXT_COLOR,
-                font: Some(&self.body_font),
+                font: Some(&self.title_font),
                 ..Default::default()
             },
         );
@@ -318,15 +377,26 @@ pub struct Button {
     bounds: Rect,
     label: String,
     label_dimensions: TextDimensions,
+    font_size: u16,
+    is_primary: bool,
 }
 
 impl Button {
-    fn new(id: ButtonId, bounds: Rect, label: String, label_dimensions: TextDimensions) -> Self {
+    fn new(
+        id: ButtonId,
+        bounds: Rect,
+        label: String,
+        label_dimensions: TextDimensions,
+        font_size: u16,
+        is_primary: bool,
+    ) -> Self {
         Self {
             id,
             bounds,
             label,
             label_dimensions,
+            font_size,
+            is_primary,
         }
     }
 
