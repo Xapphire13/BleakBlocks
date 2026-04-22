@@ -328,7 +328,7 @@ fn compute_grid_rect(screen_w: f32, screen_h: f32, status_panel_h: f32) -> (Vec2
         container_h - CONTAINER_INNER_PADDING * 2.0,
     );
     let grid_x = container_x + (container_w - grid_size) / 2.0;
-    let grid_y = container_y + CONTAINER_INNER_PADDING;
+    let grid_y = container_y + (container_h - grid_size) / 2.0;
     (Vec2::new(grid_x, grid_y), Vec2::new(grid_size, grid_size))
 }
 
