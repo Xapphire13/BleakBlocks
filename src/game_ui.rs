@@ -36,7 +36,7 @@ impl GameUi {
         let title_font =
             load_ttf_font_from_bytes(include_bytes!("../assets/Creepster-Regular.ttf")).unwrap();
         let body_font =
-            load_ttf_font_from_bytes(include_bytes!("../assets/Jua-Regular.ttf")).unwrap();
+            load_ttf_font_from_bytes(include_bytes!("../assets/Jersey15-Regular.ttf")).unwrap();
 
         let label_dims = measure_text("A", Some(&body_font), BODY_TEXT_SIZE, 1.0);
         let value_dims = measure_text("A", Some(&title_font), LABEL_VALUE_SIZE, 1.0);
