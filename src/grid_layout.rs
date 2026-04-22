@@ -48,8 +48,7 @@ impl GridLayout {
     }
 
     pub fn resize(&mut self, position: Vec2, dimensions: Vec2) {
-        self.block_size = (dimensions.x / self.cols as f32)
-            .min(dimensions.y / self.rows as f32);
+        self.block_size = (dimensions.x / self.cols as f32).min(dimensions.y / self.rows as f32);
         self.rect = Rect {
             x: position.x,
             y: position.y,

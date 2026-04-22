@@ -251,15 +251,30 @@ impl App {
             block_color.b * BLOCK_SHADOW_FACTOR * darken,
             1.0,
         );
-        let fill_color = Color::new(block_color.r * darken, block_color.g * darken, block_color.b * darken, 1.0);
+        let fill_color = Color::new(
+            block_color.r * darken,
+            block_color.g * darken,
+            block_color.b * darken,
+            1.0,
+        );
         let cell_radius = (size * 0.15).min(6.0);
         let inner_bottom_r = cell_radius * 1.1;
 
-        draw_rounded_rect(position.x, position.y, size, size, cell_radius, shadow_color);
+        draw_rounded_rect(
+            position.x,
+            position.y,
+            size,
+            size,
+            cell_radius,
+            shadow_color,
+        );
         draw_rounded_rect_asymmetric(
-            position.x, position.y,
-            size, size - BLOCK_INSET,
-            cell_radius, inner_bottom_r,
+            position.x,
+            position.y,
+            size,
+            size - BLOCK_INSET,
+            cell_radius,
+            inner_bottom_r,
             fill_color,
         );
         self.sprite_sheet.render_sprite(
@@ -333,4 +348,3 @@ pub struct UiContext {
 pub struct FrameState {
     hovered_blocks: HashSet<Coordinate>,
 }
-
