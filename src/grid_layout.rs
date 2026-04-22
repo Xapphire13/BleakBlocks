@@ -22,9 +22,15 @@ pub struct GridLayout {
 }
 
 impl GridLayout {
-    pub fn new(position: Vec2, dimensions: Vec2, rows: u32, cols: u32) -> Self {
+    pub fn new(
+        position: Vec2,
+        dimensions: Vec2,
+        rows: u32,
+        cols: u32,
+        block_type_count: usize,
+    ) -> Self {
         let block_size = (dimensions.x / cols as f32).min(dimensions.y / rows as f32);
-        let block_types = BlockType::iter().collect::<Vec<_>>();
+        let block_types = BlockType::iter().take(block_type_count).collect::<Vec<_>>();
 
         let mut blocks = vec![];
         for _ in 0..(rows * cols) {
@@ -93,7 +99,7 @@ impl GridLayout {
     }
 
     fn get_index(&self, position: Coordinate) -> usize {
-        (position.row * self.rows + position.col) as usize
+        (position.row * self.cols + position.col) as usize
     }
 
     pub fn get_block(&self, position: Coordinate) -> Option<&Block> {

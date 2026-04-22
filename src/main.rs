@@ -8,11 +8,13 @@ mod app;
 mod block;
 mod constants;
 mod coordinate;
+mod difficulty;
 mod drawing;
 mod fps_limiter;
 mod game_session;
 mod game_ui;
 mod grid_layout;
+mod grid_size;
 mod physics_system;
 mod sprite_sheet;
 

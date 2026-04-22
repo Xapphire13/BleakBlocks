@@ -19,10 +19,12 @@ use crate::{
         ui::{BLOCK_GAP, CONTAINER_INNER_PADDING, CORNER_RADIUS, WINDOW_PADDING},
     },
     coordinate::{Coordinate, coordinate},
+    difficulty::Difficulty,
     drawing::{draw_rounded_rect, draw_rounded_rect_asymmetric},
     game_session::{GameSession, GameState},
     game_ui::{ButtonId, GameUi},
     grid_layout::GridLayout,
+    grid_size::GridSize,
     physics_system::PhysicsSystem,
     sprite_sheet::SpriteSheet,
 };
@@ -32,6 +34,7 @@ pub enum AppState {
     Playing,
     GameOver,
     MainMenu,
+    Settings,
 }
 
 pub struct App {
@@ -39,16 +42,22 @@ pub struct App {
     sprite_sheet: SpriteSheet,
     ui: GameUi,
     current_session: Option<GameSession>,
+    grid_size: GridSize,
+    difficulty: Difficulty,
 }
 
 impl App {
     pub fn new() -> Self {
         let app_state = AppState::MainMenu;
+        let grid_size = GridSize::default();
+        let difficulty = Difficulty::default();
         Self {
             state: app_state,
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 512.0),
-            ui: GameUi::new(app_state),
+            ui: GameUi::new(app_state, grid_size, difficulty),
             current_session: None,
+            grid_size,
+            difficulty,
         }
     }
 
@@ -75,13 +84,23 @@ impl App {
     }
 
     pub fn update(&mut self, input: InputEvent) {
-        self.ui
-            .update_buttons(self.state, self.current_session.is_some());
+        self.ui.update_buttons(
+            self.state,
+            self.current_session.is_some(),
+            self.grid_size,
+            self.difficulty,
+        );
 
         // macroquad has no resize event, so we recompute layout each frame
         if let Some(session) = &mut self.current_session {
             let panel_h = self.ui.status_panel_height();
-            let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h);
+            let (pos, dims) = compute_grid_rect(
+                screen_width(),
+                screen_height(),
+                panel_h,
+                session.layout.rows,
+                session.layout.cols,
+            );
             session.layout.resize(pos, dims);
         }
 
@@ -99,6 +118,10 @@ impl App {
                 ButtonId::NewGame => self.new_game(),
                 ButtonId::Pause => self.set_state(AppState::MainMenu),
                 ButtonId::Resume => self.set_state(AppState::Playing),
+                ButtonId::Settings => self.set_state(AppState::Settings),
+                ButtonId::Back => self.set_state(AppState::MainMenu),
+                ButtonId::SetGridSize(s) => self.grid_size = s,
+                ButtonId::SetDifficulty(d) => self.difficulty = d,
                 _ => {}
             },
             InputEvent::None => {}
@@ -180,8 +203,12 @@ impl App {
         }
 
         self.state = state;
-        self.ui
-            .update_buttons(state, self.current_session.is_some());
+        self.ui.update_buttons(
+            state,
+            self.current_session.is_some(),
+            self.grid_size,
+            self.difficulty,
+        );
     }
 
     fn render_grid_background(&self, session: &GameSession) {
@@ -305,11 +332,13 @@ impl App {
     }
 
     pub fn new_game(&mut self) {
+        let is_landscape = screen_width() > screen_height();
+        let (rows, cols) = self.grid_size.grid_dims(is_landscape);
         let panel_h = self.ui.status_panel_height();
-        let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h);
+        let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h, rows, cols);
         self.current_session = Some(GameSession {
             state: GameState::Playing,
-            layout: GridLayout::new(pos, dims, 10, 10),
+            layout: GridLayout::new(pos, dims, rows, cols, self.difficulty.block_type_count()),
             score: 0,
             physics_system: PhysicsSystem::new(),
         });
@@ -317,19 +346,26 @@ impl App {
     }
 }
 
-fn compute_grid_rect(screen_w: f32, screen_h: f32, status_panel_h: f32) -> (Vec2, Vec2) {
+fn compute_grid_rect(
+    screen_w: f32,
+    screen_h: f32,
+    status_panel_h: f32,
+    rows: u32,
+    cols: u32,
+) -> (Vec2, Vec2) {
     let panel_y = screen_h - status_panel_h;
     let container_x = WINDOW_PADDING.x;
     let container_y = WINDOW_PADDING.y;
     let container_w = screen_w - WINDOW_PADDING.x * 2.0;
     let container_h = panel_y - WINDOW_PADDING.y - container_y;
-    let grid_size = f32::min(
-        container_w - CONTAINER_INNER_PADDING * 2.0,
-        container_h - CONTAINER_INNER_PADDING * 2.0,
-    );
-    let grid_x = container_x + (container_w - grid_size) / 2.0;
-    let grid_y = container_y + (container_h - grid_size) / 2.0;
-    (Vec2::new(grid_x, grid_y), Vec2::new(grid_size, grid_size))
+    let available_w = container_w - CONTAINER_INNER_PADDING * 2.0;
+    let available_h = container_h - CONTAINER_INNER_PADDING * 2.0;
+    let block_size = (available_w / cols as f32).min(available_h / rows as f32);
+    let grid_w = cols as f32 * block_size;
+    let grid_h = rows as f32 * block_size;
+    let grid_x = container_x + (container_w - grid_w) / 2.0;
+    let grid_y = container_y + (container_h - grid_h) / 2.0;
+    (Vec2::new(grid_x, grid_y), Vec2::new(grid_w, grid_h))
 }
 
 pub enum InputEvent {
