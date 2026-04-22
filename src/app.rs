@@ -54,7 +54,7 @@ impl App {
         Self {
             state: app_state,
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 512.0),
-            ui: GameUi::new(app_state, grid_size, difficulty),
+            ui: GameUi::new(),
             current_session: None,
             grid_size,
             difficulty,

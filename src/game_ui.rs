@@ -38,7 +38,7 @@ pub struct GameUi {
 }
 
 impl GameUi {
-    pub fn new(app_state: AppState, grid_size: GridSize, difficulty: Difficulty) -> Self {
+    pub fn new() -> Self {
         let title_font =
             load_ttf_font_from_bytes(include_bytes!("../assets/Creepster-Regular.ttf")).unwrap();
         let body_font =
@@ -52,7 +52,7 @@ impl GameUi {
             + LABEL_VALUE_GAP
             + value_dims.height;
 
-        let mut game_ui = Self {
+        Self {
             title_font,
             body_font,
             buttons: vec![],
@@ -60,11 +60,7 @@ impl GameUi {
             status_panel_height,
             settings_grid_size_label_y: 0.0,
             settings_difficulty_label_y: 0.0,
-        };
-
-        game_ui.update_buttons(app_state, false, grid_size, difficulty);
-
-        game_ui
+        }
     }
 
     pub fn status_panel_height(&self) -> f32 {
