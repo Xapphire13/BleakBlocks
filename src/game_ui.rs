@@ -177,11 +177,18 @@ impl GameUi {
 
         let card_y = panel_y + WINDOW_PADDING.y;
         let card_h = self.status_panel_height - WINDOW_PADDING.y * 2.0;
+
+        let pause_btn_size = card_h;
+        let pause_btn_x = screen_width - WINDOW_PADDING.x - pause_btn_size;
+        let cards_end = pause_btn_x - WINDOW_PADDING.x;
+        let card_w = (cards_end - WINDOW_PADDING.x - WINDOW_PADDING.x) / 2.0;
+
         let mut card_x = WINDOW_PADDING.x;
 
         card_x = self.render_datum_card(
             card_x,
             card_y,
+            card_w,
             card_h,
             "Blocks left",
             &blocks_remaining.to_formatted_string(&Locale::en),
@@ -191,24 +198,23 @@ impl GameUi {
         self.render_datum_card(
             card_x,
             card_y,
+            card_w,
             card_h,
             "Score",
             &score.to_formatted_string(&Locale::en),
         );
     }
 
-    fn render_datum_card(&self, x: f32, y: f32, h: f32, label: &str, value: &str) -> f32 {
+    fn render_datum_card(&self, x: f32, y: f32, w: f32, h: f32, label: &str, value: &str) -> f32 {
         let label_upper = label.to_uppercase();
         let label_dims = measure_text(&label_upper, Some(&self.body_font), LABEL_TEXT_SIZE, 1.0);
         let value_dims = measure_text(value, Some(&self.title_font), LABEL_VALUE_SIZE, 1.0);
-        let content_w = f32::max(label_dims.width, value_dims.width);
-        let card_w = content_w + CONTAINER_INNER_PADDING * 2.0;
 
-        draw_rounded_rect(x, y, card_w, h, CORNER_RADIUS, CARD_BORDER_COLOR);
+        draw_rounded_rect(x, y, w, h, CORNER_RADIUS, CARD_BORDER_COLOR);
         draw_rounded_rect(
             x + 1.0,
             y + 1.0,
-            card_w - 2.0,
+            w - 2.0,
             h - 2.0,
             CORNER_RADIUS - 1.0,
             BACKGROUND_COLOR,
@@ -240,7 +246,7 @@ impl GameUi {
             },
         );
 
-        x + card_w
+        x + w
     }
 
     fn render_game_over(&self, score: u32) {
