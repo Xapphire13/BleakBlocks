@@ -129,11 +129,21 @@ impl App {
                 ButtonId::Back => self.set_state(AppState::MainMenu),
                 ButtonId::SetGridSize(s) => {
                     self.grid_size = s;
-                    self.ui.update_buttons(self.state, self.current_session.is_some(), self.grid_size, self.difficulty);
+                    self.ui.update_buttons(
+                        self.state,
+                        self.current_session.is_some(),
+                        self.grid_size,
+                        self.difficulty,
+                    );
                 }
                 ButtonId::SetDifficulty(d) => {
                     self.difficulty = d;
-                    self.ui.update_buttons(self.state, self.current_session.is_some(), self.grid_size, self.difficulty);
+                    self.ui.update_buttons(
+                        self.state,
+                        self.current_session.is_some(),
+                        self.grid_size,
+                        self.difficulty,
+                    );
                 }
                 _ => {}
             },
