@@ -13,10 +13,13 @@ use crate::{
     constants::{
         physics::FORCE,
         style::{
-            BACKGROUND_COLOR, BLOCK_INSET, BLOCK_SHADOW_FACTOR, EMPTY_BLOCK_COLOR,
-            GRID_BACKGROUND_COLOR,
+            BACKGROUND_COLOR, BLOCK_DETAIL_MIN_SIZE, BLOCK_INSET, BLOCK_SHADOW_FACTOR,
+            EMPTY_BLOCK_COLOR, GRID_BACKGROUND_COLOR,
         },
-        ui::{BLOCK_GAP, CONTAINER_INNER_PADDING, CORNER_RADIUS, WINDOW_PADDING},
+        ui::{
+            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP, CONTAINER_INNER_PADDING,
+            CORNER_RADIUS, WINDOW_PADDING,
+        },
     },
     coordinate::{Coordinate, coordinate},
     difficulty::Difficulty,
@@ -248,7 +251,10 @@ impl App {
         let block_size = session.layout.block_size;
         let half_gap = BLOCK_GAP / 2.0;
         let render_size = block_size - BLOCK_GAP;
-        let cell_radius = (render_size * 0.15).min(6.0);
+        let roundness = ((render_size - BLOCK_DETAIL_MIN_SIZE)
+            / (BLOCK_DETAIL_FULL_SIZE - BLOCK_DETAIL_MIN_SIZE))
+            .clamp(0.0, 1.0);
+        let cell_radius = render_size * BLOCK_CORNER_RADIUS_FACTOR * roundness;
 
         // Pass 1: empty cell backgrounds for every cell
         for row in 0..session.layout.rows {
@@ -306,7 +312,11 @@ impl App {
             block_color.b * darken,
             1.0,
         );
-        let cell_radius = (size * 0.15).min(6.0);
+        let roundness = ((size - BLOCK_DETAIL_MIN_SIZE)
+            / (BLOCK_DETAIL_FULL_SIZE - BLOCK_DETAIL_MIN_SIZE))
+            .clamp(0.0, 1.0);
+        let cell_radius = size * BLOCK_CORNER_RADIUS_FACTOR * roundness;
+
         let inner_bottom_r = cell_radius * 1.1;
 
         draw_rounded_rect(

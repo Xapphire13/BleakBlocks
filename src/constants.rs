@@ -10,7 +10,8 @@ pub mod style {
     pub const GRID_BACKGROUND_COLOR: Color = Color::from_hex(0x1A1226);
     pub const EMPTY_BLOCK_COLOR: Color = Color::from_hex(0x2D2340);
     pub const BLOCK_SHADOW_FACTOR: f32 = 0.6;
-    pub const BLOCK_INSET: f32 = 3.0;
+    pub const BLOCK_INSET: f32 = 2.0;
+    pub const BLOCK_DETAIL_MIN_SIZE: f32 = 16.0;
 }
 
 pub mod ui {
@@ -35,6 +36,8 @@ pub mod ui {
 
     // Shape
     pub const CORNER_RADIUS: f32 = 8.0;
+    pub const BLOCK_CORNER_RADIUS_FACTOR: f32 = 0.15;
+    pub const BLOCK_DETAIL_FULL_SIZE: f32 = 40.0;
 
     pub const TEXT_COLOR: Color = WHITE;
     pub const LABEL_TEXT_COLOR: Color = Color::new(1.0, 1.0, 1.0, 0.55);
