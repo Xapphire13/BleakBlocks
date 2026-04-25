@@ -17,12 +17,12 @@ use crate::constants::{
 use super::Fonts;
 use super::buttons::{Button, ButtonId, ButtonStyle};
 
-pub(super) use game_over::GameOverLayout;
-pub(super) use main_menu::MainMenuLayout;
-pub(super) use playing::PlayingLayout;
-pub(super) use settings::SettingsLayout;
+pub use game_over::GameOverLayout;
+pub use main_menu::MainMenuLayout;
+pub use playing::PlayingLayout;
+pub use settings::SettingsLayout;
 
-pub(super) enum ScreenLayout {
+pub enum ScreenLayout {
     Playing(PlayingLayout),
     MainMenu(MainMenuLayout),
     GameOver(GameOverLayout),
@@ -36,7 +36,7 @@ impl Default for ScreenLayout {
 }
 
 impl ScreenLayout {
-    pub(super) fn buttons(&self) -> &[Button] {
+    pub fn buttons(&self) -> &[Button] {
         match self {
             ScreenLayout::Playing(l) => &l.buttons,
             ScreenLayout::MainMenu(l) => &l.buttons,
@@ -45,7 +45,7 @@ impl ScreenLayout {
         }
     }
 
-    pub(super) fn render(&self, fonts: Fonts, blocks_remaining: u32, score: u32) {
+    pub fn render(&self, fonts: Fonts, blocks_remaining: u32, score: u32) {
         match self {
             ScreenLayout::Playing(l) => l.render(fonts, blocks_remaining, score),
             ScreenLayout::GameOver(l) => l.render(fonts, score),
@@ -54,7 +54,7 @@ impl ScreenLayout {
         }
     }
 
-    pub(super) fn status_panel_height(&self) -> f32 {
+    pub fn status_panel_height(&self) -> f32 {
         match self {
             ScreenLayout::Playing(l) => l.status_panel_height,
             _ => unreachable!("status_panel_height() must only be called in Playing state"),
@@ -62,7 +62,7 @@ impl ScreenLayout {
     }
 }
 
-pub(super) fn compute_button_stack(
+pub fn compute_button_stack(
     title_font: &Font,
     items: &[(&str, ButtonId, ButtonStyle)],
     start_y: f32,

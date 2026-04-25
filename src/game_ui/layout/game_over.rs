@@ -8,12 +8,12 @@ use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
 use super::compute_button_stack;
 
-pub(in super::super) struct GameOverLayout {
-    pub(super) buttons: Vec<Button>,
+pub struct GameOverLayout {
+    pub buttons: Vec<Button>,
 }
 
 impl GameOverLayout {
-    pub(in super::super) fn compute(title_font: &Font) -> Self {
+    pub fn compute(title_font: &Font) -> Self {
         let y = screen_height() - WINDOW_PADDING.y;
         Self {
             buttons: compute_button_stack(
@@ -24,7 +24,7 @@ impl GameOverLayout {
         }
     }
 
-    pub(super) fn render(&self, fonts: Fonts, score: u32) {
+    pub fn render(&self, fonts: Fonts, score: u32) {
         let screen_w = screen_width();
         let screen_h = screen_height();
 

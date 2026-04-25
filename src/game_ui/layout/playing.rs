@@ -21,13 +21,13 @@ use crate::{
 use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
 
-pub(in super::super) struct PlayingLayout {
-    pub(super) status_panel_height: f32,
-    pub(super) buttons: Vec<Button>,
+pub struct PlayingLayout {
+    pub status_panel_height: f32,
+    pub buttons: Vec<Button>,
 }
 
 impl PlayingLayout {
-    pub(in super::super) fn compute(title_font: &Font, body_font: &Font) -> Self {
+    pub fn compute(title_font: &Font, body_font: &Font) -> Self {
         let label_dims = measure_text("A", Some(body_font), BODY_TEXT_SIZE, 1.0);
         let value_dims = measure_text("A", Some(title_font), LABEL_VALUE_SIZE, 1.0);
         let status_panel_height = WINDOW_PADDING.y * 2.0
@@ -58,7 +58,7 @@ impl PlayingLayout {
         }
     }
 
-    pub(super) fn render(&self, fonts: Fonts, blocks_remaining: u32, score: u32) {
+    pub fn render(&self, fonts: Fonts, blocks_remaining: u32, score: u32) {
         let screen_w = screen_width();
         let screen_h = screen_height();
         let panel_y = screen_h - self.status_panel_height;

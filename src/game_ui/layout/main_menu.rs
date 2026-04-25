@@ -7,12 +7,12 @@ use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
 use super::compute_button_stack;
 
-pub(in super::super) struct MainMenuLayout {
-    pub(super) buttons: Vec<Button>,
+pub struct MainMenuLayout {
+    pub buttons: Vec<Button>,
 }
 
 impl MainMenuLayout {
-    pub(in super::super) fn compute(title_font: &Font, is_existing_game: bool) -> Self {
+    pub fn compute(title_font: &Font, is_existing_game: bool) -> Self {
         let mut items: Vec<(&str, ButtonId, ButtonStyle)> = vec![];
         if is_existing_game {
             items.push(("Resume", ButtonId::Resume, ButtonStyle::Primary));
@@ -28,7 +28,7 @@ impl MainMenuLayout {
         }
     }
 
-    pub(super) fn render(&self, fonts: Fonts) {
+    pub fn render(&self, fonts: Fonts) {
         let text = "Bleak Blocks";
         let dims = measure_text(text, Some(fonts.title), TITLE_TEXT_SIZE, 1.0);
         draw_text_ex(

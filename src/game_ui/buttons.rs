@@ -33,7 +33,7 @@ pub enum ButtonId {
 }
 
 #[derive(Clone)]
-pub(super) enum ButtonStyle {
+pub enum ButtonStyle {
     Primary,
     Secondary,
     Toggle {
@@ -43,17 +43,17 @@ pub(super) enum ButtonStyle {
     },
 }
 
-pub(super) struct Button {
-    pub(super) id: ButtonId,
-    pub(super) bounds: Rect,
-    pub(super) label: String,
-    pub(super) label_dimensions: TextDimensions,
-    pub(super) font_size: u16,
-    pub(super) style: ButtonStyle,
+pub struct Button {
+    pub id: ButtonId,
+    pub bounds: Rect,
+    pub label: String,
+    pub label_dimensions: TextDimensions,
+    pub font_size: u16,
+    pub style: ButtonStyle,
 }
 
 impl Button {
-    pub(super) fn new(
+    pub fn new(
         id: ButtonId,
         bounds: Rect,
         label: String,
@@ -71,15 +71,15 @@ impl Button {
         }
     }
 
-    pub(super) fn is_hovered(&self) -> bool {
+    pub fn is_hovered(&self) -> bool {
         self.bounds.contains(mouse_position().into())
     }
 
-    pub(super) fn is_pressed(&self) -> bool {
+    pub fn is_pressed(&self) -> bool {
         is_mouse_button_pressed(MouseButton::Left) && self.is_hovered()
     }
 
-    pub(super) fn render(&self, fonts: super::Fonts) {
+    pub fn render(&self, fonts: super::Fonts) {
         let (border_color, fill_color, hover_color, shadow_color) = match &self.style {
             ButtonStyle::Primary => (
                 PRIMARY_BUTTON_COLOR,

@@ -20,14 +20,14 @@ use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
 use super::compute_button_stack;
 
-pub(in super::super) struct SettingsLayout {
-    pub(super) grid_size_label_y: f32,
-    pub(super) difficulty_label_y: f32,
-    pub(super) buttons: Vec<Button>,
+pub struct SettingsLayout {
+    pub grid_size_label_y: f32,
+    pub difficulty_label_y: f32,
+    pub buttons: Vec<Button>,
 }
 
 impl SettingsLayout {
-    pub(in super::super) fn compute(
+    pub fn compute(
         title_font: &Font,
         body_font: &Font,
         grid_size: GridSize,
@@ -128,7 +128,7 @@ impl SettingsLayout {
         }
     }
 
-    pub(super) fn render(&self, fonts: Fonts) {
+    pub fn render(&self, fonts: Fonts) {
         let text = "Settings";
         let dims = measure_text(text, Some(fonts.title), TITLE_TEXT_SIZE, 1.0);
         draw_text_ex(
