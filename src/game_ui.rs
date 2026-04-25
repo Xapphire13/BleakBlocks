@@ -23,13 +23,12 @@ mod layout;
 mod rendering;
 
 pub use buttons::ButtonId;
-use buttons::{Button, ToggleButton};
+use buttons::{Button, ButtonStyle};
 
 pub struct GameUi {
     title_font: Font,
     body_font: Font,
     buttons: Vec<Button>,
-    toggle_buttons: Vec<ToggleButton>,
     status_panel_height: f32,
     settings_grid_size_label_y: f32,
     settings_difficulty_label_y: f32,
@@ -54,7 +53,6 @@ impl GameUi {
             title_font,
             body_font,
             buttons: vec![],
-            toggle_buttons: vec![],
             status_panel_height,
             settings_grid_size_label_y: 0.0,
             settings_difficulty_label_y: 0.0,
@@ -89,11 +87,12 @@ impl GameUi {
         }
 
         for button in &self.buttons {
-            rendering::render_button(&self.title_font, button);
-        }
-
-        for toggle in &self.toggle_buttons {
-            rendering::render_toggle_button(&self.title_font, &self.body_font, toggle);
+            match &button.style {
+                ButtonStyle::Toggle { .. } => {
+                    rendering::render_toggle_button(&self.title_font, &self.body_font, button);
+                }
+                _ => rendering::render_button(&self.title_font, button),
+            }
         }
     }
 
@@ -102,12 +101,6 @@ impl GameUi {
             .iter()
             .find(|button| button.is_pressed())
             .map(|button| button.id.clone())
-            .or_else(|| {
-                self.toggle_buttons
-                    .iter()
-                    .find(|toggle| toggle.is_pressed())
-                    .map(|toggle| toggle.id.clone())
-            })
     }
 
     pub fn update_buttons(
@@ -117,8 +110,6 @@ impl GameUi {
         grid_size: GridSize,
         difficulty: Difficulty,
     ) {
-        self.toggle_buttons.clear();
-
         match app_state {
             AppState::Playing => {
                 let panel_y = screen_height() - self.status_panel_height;
@@ -136,39 +127,37 @@ impl GameUi {
                     pause_label.to_string(),
                     pause_dims,
                     PAUSE_ICON_SIZE,
-                    false,
+                    ButtonStyle::Secondary,
                 )];
             }
             AppState::GameOver => {
                 let y = screen_height() - WINDOW_PADDING.y;
                 self.buttons = layout::compute_button_stack(
                     &self.title_font,
-                    &[("Menu", ButtonId::Menu, false)],
+                    &[("Menu", ButtonId::Menu, ButtonStyle::Secondary)],
                     y,
                 );
             }
             AppState::MainMenu => {
-                let mut items: Vec<(&str, ButtonId, bool)> = vec![];
+                let mut items: Vec<(&str, ButtonId, ButtonStyle)> = vec![];
                 if is_existing_game {
-                    items.push(("Resume", ButtonId::Resume, true));
-                    items.push(("New game", ButtonId::NewGame, false));
+                    items.push(("Resume", ButtonId::Resume, ButtonStyle::Primary));
+                    items.push(("New game", ButtonId::NewGame, ButtonStyle::Secondary));
                 } else {
-                    items.push(("New game", ButtonId::NewGame, true));
+                    items.push(("New game", ButtonId::NewGame, ButtonStyle::Primary));
                 }
-                items.push(("Settings", ButtonId::Settings, false));
-                items.push(("High scores", ButtonId::HighScores, false));
+                items.push(("Settings", ButtonId::Settings, ButtonStyle::Secondary));
+                items.push(("High scores", ButtonId::HighScores, ButtonStyle::Secondary));
                 self.buttons = layout::compute_button_stack(&self.title_font, &items, 125.0);
             }
             AppState::Settings => {
-                let (buttons, toggle_buttons, gs_label_y, diff_label_y) =
-                    layout::compute_settings_layout(
-                        &self.title_font,
-                        &self.body_font,
-                        grid_size,
-                        difficulty,
-                    );
+                let (buttons, gs_label_y, diff_label_y) = layout::compute_settings_layout(
+                    &self.title_font,
+                    &self.body_font,
+                    grid_size,
+                    difficulty,
+                );
                 self.buttons = buttons;
-                self.toggle_buttons = toggle_buttons;
                 self.settings_grid_size_label_y = gs_label_y;
                 self.settings_difficulty_label_y = diff_label_y;
             }

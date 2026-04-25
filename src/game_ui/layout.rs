@@ -13,14 +13,14 @@ use crate::{
     grid_size::GridSize,
 };
 
-use super::buttons::{Button, ButtonId, ToggleButton};
+use super::buttons::{Button, ButtonId, ButtonStyle};
 
 pub(super) fn compute_settings_layout(
     title_font: &Font,
     body_font: &Font,
     grid_size: GridSize,
     difficulty: Difficulty,
-) -> (Vec<Button>, Vec<ToggleButton>, f32, f32) {
+) -> (Vec<Button>, f32, f32) {
     let is_landscape = screen_width() > screen_height();
     let available_w = screen_width() - 2.0 * WINDOW_PADDING.x;
     let btn_gap = WINDOW_PADDING.x;
@@ -46,7 +46,7 @@ pub(super) fn compute_settings_layout(
         GridSize::Large,
         GridSize::ExtraLarge,
     ];
-    let mut toggle_buttons = Vec::new();
+    let mut buttons = Vec::new();
     for (i, gs) in gs_variants.iter().enumerate() {
         let row = i / 2;
         let col = i % 2;
@@ -56,15 +56,18 @@ pub(super) fn compute_settings_layout(
         let sub_label = gs.size_hint(is_landscape);
         let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
         let sub_label_dims = measure_text(&sub_label, Some(body_font), LABEL_TEXT_SIZE, 1.0);
-        toggle_buttons.push(ToggleButton {
-            id: ButtonId::SetGridSize(*gs),
-            bounds: Rect::new(x, y, gs_btn_w, gs_btn_h),
+        buttons.push(Button::new(
+            ButtonId::SetGridSize(*gs),
+            Rect::new(x, y, gs_btn_w, gs_btn_h),
             label,
-            label_dimensions: label_dims,
-            sub_label: Some(sub_label),
-            sub_label_dimensions: Some(sub_label_dims),
-            is_selected: *gs == grid_size,
-        });
+            label_dims,
+            BODY_TEXT_SIZE,
+            ButtonStyle::Toggle {
+                is_selected: *gs == grid_size,
+                sub_label: Some(sub_label),
+                sub_label_dimensions: Some(sub_label_dims),
+            },
+        ));
     }
     current_y += 2.0 * gs_btn_h + btn_gap;
 
@@ -84,15 +87,18 @@ pub(super) fn compute_settings_layout(
         let x = WINDOW_PADDING.x + i as f32 * (diff_btn_w + btn_gap);
         let label = diff.label().to_string();
         let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
-        toggle_buttons.push(ToggleButton {
-            id: ButtonId::SetDifficulty(*diff),
-            bounds: Rect::new(x, current_y, diff_btn_w, diff_btn_h),
+        buttons.push(Button::new(
+            ButtonId::SetDifficulty(*diff),
+            Rect::new(x, current_y, diff_btn_w, diff_btn_h),
             label,
-            label_dimensions: label_dims,
-            sub_label: None,
-            sub_label_dimensions: None,
-            is_selected: *diff == difficulty,
-        });
+            label_dims,
+            BODY_TEXT_SIZE,
+            ButtonStyle::Toggle {
+                is_selected: *diff == difficulty,
+                sub_label: None,
+                sub_label_dimensions: None,
+            },
+        ));
     }
     current_y += diff_btn_h;
 
@@ -100,18 +106,18 @@ pub(super) fn compute_settings_layout(
     current_y += 24.0;
     let back_dims = measure_text("Back", Some(title_font), BODY_TEXT_SIZE, 1.0);
     let back_baseline = current_y + back_dims.offset_y + BUTTON_PADDING.y;
-    let buttons = compute_button_stack(
+    buttons.extend(compute_button_stack(
         title_font,
-        &[("Back", ButtonId::Back, false)],
+        &[("Back", ButtonId::Back, ButtonStyle::Secondary)],
         back_baseline,
-    );
+    ));
 
-    (buttons, toggle_buttons, gs_label_y, diff_label_y)
+    (buttons, gs_label_y, diff_label_y)
 }
 
 pub(super) fn compute_button_stack(
     title_font: &Font,
-    items: &[(&str, ButtonId, bool)],
+    items: &[(&str, ButtonId, ButtonStyle)],
     start_y: f32,
 ) -> Vec<Button> {
     let measurements: Vec<TextDimensions> = items
@@ -129,7 +135,7 @@ pub(super) fn compute_button_stack(
     let mut buttons = Vec::with_capacity(items.len());
 
     for (item, dims) in items.iter().zip(measurements.iter()) {
-        let (text, id, is_primary): &(&str, ButtonId, bool) = item;
+        let (text, id, style): &(&str, ButtonId, ButtonStyle) = item;
         let face_h = dims.height + 2.0 * BUTTON_PADDING.y;
         let bounds = Rect::new(
             center_x - max_btn_w / 2.0,
@@ -143,7 +149,7 @@ pub(super) fn compute_button_stack(
             text.to_string(),
             *dims,
             BODY_TEXT_SIZE,
-            *is_primary,
+            style.clone(),
         ));
         y += face_h + BLOCK_INSET + 8.0;
     }

@@ -19,13 +19,24 @@ pub enum ButtonId {
     SetDifficulty(Difficulty),
 }
 
+#[derive(Clone)]
+pub(super) enum ButtonStyle {
+    Primary,
+    Secondary,
+    Toggle {
+        is_selected: bool,
+        sub_label: Option<String>,
+        sub_label_dimensions: Option<TextDimensions>,
+    },
+}
+
 pub(super) struct Button {
     pub(super) id: ButtonId,
     pub(super) bounds: Rect,
     pub(super) label: String,
     pub(super) label_dimensions: TextDimensions,
     pub(super) font_size: u16,
-    pub(super) is_primary: bool,
+    pub(super) style: ButtonStyle,
 }
 
 impl Button {
@@ -35,7 +46,7 @@ impl Button {
         label: String,
         label_dimensions: TextDimensions,
         font_size: u16,
-        is_primary: bool,
+        style: ButtonStyle,
     ) -> Self {
         Self {
             id,
@@ -43,30 +54,10 @@ impl Button {
             label,
             label_dimensions,
             font_size,
-            is_primary,
+            style,
         }
     }
 
-    pub(super) fn is_hovered(&self) -> bool {
-        self.bounds.contains(mouse_position().into())
-    }
-
-    pub(super) fn is_pressed(&self) -> bool {
-        is_mouse_button_pressed(MouseButton::Left) && self.is_hovered()
-    }
-}
-
-pub(super) struct ToggleButton {
-    pub(super) id: ButtonId,
-    pub(super) bounds: Rect,
-    pub(super) label: String,
-    pub(super) label_dimensions: TextDimensions,
-    pub(super) sub_label: Option<String>,
-    pub(super) sub_label_dimensions: Option<TextDimensions>,
-    pub(super) is_selected: bool,
-}
-
-impl ToggleButton {
     pub(super) fn is_hovered(&self) -> bool {
         self.bounds.contains(mouse_position().into())
     }

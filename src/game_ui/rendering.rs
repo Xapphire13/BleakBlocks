@@ -19,7 +19,7 @@ use crate::{
     drawing::draw_rounded_rect,
 };
 
-use super::buttons::{Button, ToggleButton};
+use super::buttons::{Button, ButtonStyle};
 
 pub(super) fn render_status_panel(
     title_font: &Font,
@@ -221,21 +221,22 @@ pub(super) fn render_settings(
 }
 
 pub(super) fn render_button(title_font: &Font, button: &Button) {
-    let (border_color, fill_color, hover_color, shadow_color) = if button.is_primary {
-        (
-            PRIMARY_BUTTON_COLOR,
-            PRIMARY_BUTTON_COLOR,
-            PRIMARY_BUTTON_HOVER_COLOR,
-            PRIMARY_BUTTON_SHADOW_COLOR,
-        )
-    } else {
-        (
-            CARD_BORDER_COLOR,
-            BUTTON_BACKGROUND_COLOR,
-            CARD_BORDER_COLOR,
-            BUTTON_SHADOW_COLOR,
-        )
-    };
+    let (border_color, fill_color, hover_color, shadow_color) =
+        if matches!(button.style, ButtonStyle::Primary) {
+            (
+                PRIMARY_BUTTON_COLOR,
+                PRIMARY_BUTTON_COLOR,
+                PRIMARY_BUTTON_HOVER_COLOR,
+                PRIMARY_BUTTON_SHADOW_COLOR,
+            )
+        } else {
+            (
+                CARD_BORDER_COLOR,
+                BUTTON_BACKGROUND_COLOR,
+                CARD_BORDER_COLOR,
+                BUTTON_SHADOW_COLOR,
+            )
+        };
 
     let fill = if button.is_hovered() {
         set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
@@ -285,8 +286,17 @@ pub(super) fn render_button(title_font: &Font, button: &Button) {
     );
 }
 
-pub(super) fn render_toggle_button(title_font: &Font, body_font: &Font, toggle: &ToggleButton) {
-    let (border_color, fill_color, hover_color, shadow_color) = if toggle.is_selected {
+pub(super) fn render_toggle_button(title_font: &Font, body_font: &Font, button: &Button) {
+    let ButtonStyle::Toggle {
+        is_selected,
+        sub_label,
+        sub_label_dimensions,
+    } = &button.style
+    else {
+        return;
+    };
+
+    let (border_color, fill_color, hover_color, shadow_color) = if *is_selected {
         (
             PRIMARY_BUTTON_COLOR,
             PRIMARY_BUTTON_COLOR,
@@ -302,50 +312,50 @@ pub(super) fn render_toggle_button(title_font: &Font, body_font: &Font, toggle: 
         )
     };
 
-    let fill = if toggle.is_hovered() {
+    let fill = if button.is_hovered() {
         set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
         hover_color
     } else {
         fill_color
     };
 
-    let face_h = toggle.bounds.h - BLOCK_INSET;
+    let face_h = button.bounds.h - BLOCK_INSET;
 
     draw_rounded_rect(
-        toggle.bounds.x,
-        toggle.bounds.y,
-        toggle.bounds.w,
-        toggle.bounds.h,
+        button.bounds.x,
+        button.bounds.y,
+        button.bounds.w,
+        button.bounds.h,
         CORNER_RADIUS,
         shadow_color,
     );
     draw_rounded_rect(
-        toggle.bounds.x,
-        toggle.bounds.y,
-        toggle.bounds.w,
+        button.bounds.x,
+        button.bounds.y,
+        button.bounds.w,
         face_h,
         CORNER_RADIUS,
         border_color,
     );
     draw_rounded_rect(
-        toggle.bounds.x + 1.0,
-        toggle.bounds.y + 1.0,
-        toggle.bounds.w - 2.0,
+        button.bounds.x + 1.0,
+        button.bounds.y + 1.0,
+        button.bounds.w - 2.0,
         face_h - 2.0,
         CORNER_RADIUS - 1.0,
         fill,
     );
 
-    let center_x = toggle.bounds.center().x;
+    let center_x = button.bounds.center().x;
 
-    if let (Some(sub_label), Some(sub_dims)) = (&toggle.sub_label, &toggle.sub_label_dimensions) {
-        let total_text_h = toggle.label_dimensions.height + 4.0 + sub_dims.height;
-        let text_top = toggle.bounds.y + (face_h - total_text_h) / 2.0;
+    if let (Some(sub_label), Some(sub_dims)) = (sub_label, sub_label_dimensions) {
+        let total_text_h = button.label_dimensions.height + 4.0 + sub_dims.height;
+        let text_top = button.bounds.y + (face_h - total_text_h) / 2.0;
 
         draw_text_ex(
-            &toggle.label,
-            center_x - toggle.label_dimensions.width / 2.0,
-            text_top + toggle.label_dimensions.offset_y,
+            &button.label,
+            center_x - button.label_dimensions.width / 2.0,
+            text_top + button.label_dimensions.offset_y,
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
@@ -356,7 +366,7 @@ pub(super) fn render_toggle_button(title_font: &Font, body_font: &Font, toggle: 
         draw_text_ex(
             sub_label,
             center_x - sub_dims.width / 2.0,
-            text_top + toggle.label_dimensions.height + 4.0 + sub_dims.offset_y,
+            text_top + button.label_dimensions.height + 4.0 + sub_dims.offset_y,
             TextParams {
                 font_size: LABEL_TEXT_SIZE,
                 color: TEXT_COLOR,
@@ -365,11 +375,11 @@ pub(super) fn render_toggle_button(title_font: &Font, body_font: &Font, toggle: 
             },
         );
     } else {
-        let face_center_y = toggle.bounds.y + face_h / 2.0;
+        let face_center_y = button.bounds.y + face_h / 2.0;
         draw_text_ex(
-            &toggle.label,
-            center_x - toggle.label_dimensions.width / 2.0,
-            face_center_y - toggle.label_dimensions.height / 2.0 + toggle.label_dimensions.offset_y,
+            &button.label,
+            center_x - button.label_dimensions.width / 2.0,
+            face_center_y - button.label_dimensions.height / 2.0 + button.label_dimensions.offset_y,
             TextParams {
                 font_size: BODY_TEXT_SIZE,
                 color: TEXT_COLOR,
