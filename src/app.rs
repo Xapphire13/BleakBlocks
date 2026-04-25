@@ -44,6 +44,7 @@ pub struct App {
     current_session: Option<GameSession>,
     grid_size: GridSize,
     difficulty: Difficulty,
+    last_screen_size: Vec2,
 }
 
 impl App {
@@ -58,6 +59,7 @@ impl App {
             current_session: None,
             grid_size,
             difficulty,
+            last_screen_size: Vec2::ZERO,
         }
     }
 
@@ -84,25 +86,28 @@ impl App {
     }
 
     pub fn update(&mut self, input: InputEvent) {
-        self.ui.update_buttons(
-            self.state,
-            self.current_session.is_some(),
-            self.grid_size,
-            self.difficulty,
-        );
+        let current_size = vec2(screen_width(), screen_height());
+        if current_size != self.last_screen_size {
+            self.last_screen_size = current_size;
+            self.ui.update_buttons(
+                self.state,
+                self.current_session.is_some(),
+                self.grid_size,
+                self.difficulty,
+            );
 
-        // macroquad has no resize event, so we recompute layout each frame
-        if self.state == AppState::Playing {
-            if let Some(session) = &mut self.current_session {
-                let panel_h = self.ui.status_panel_height();
-                let (pos, dims) = compute_grid_rect(
-                    screen_width(),
-                    screen_height(),
-                    panel_h,
-                    session.layout.rows,
-                    session.layout.cols,
-                );
-                session.layout.resize(pos, dims);
+            if self.state == AppState::Playing {
+                if let Some(session) = &mut self.current_session {
+                    let panel_h = self.ui.status_panel_height();
+                    let (pos, dims) = compute_grid_rect(
+                        current_size.x,
+                        current_size.y,
+                        panel_h,
+                        session.layout.rows,
+                        session.layout.cols,
+                    );
+                    session.layout.resize(pos, dims);
+                }
             }
         }
 
@@ -122,8 +127,14 @@ impl App {
                 ButtonId::Resume => self.set_state(AppState::Playing),
                 ButtonId::Settings => self.set_state(AppState::Settings),
                 ButtonId::Back => self.set_state(AppState::MainMenu),
-                ButtonId::SetGridSize(s) => self.grid_size = s,
-                ButtonId::SetDifficulty(d) => self.difficulty = d,
+                ButtonId::SetGridSize(s) => {
+                    self.grid_size = s;
+                    self.ui.update_buttons(self.state, self.current_session.is_some(), self.grid_size, self.difficulty);
+                }
+                ButtonId::SetDifficulty(d) => {
+                    self.difficulty = d;
+                    self.ui.update_buttons(self.state, self.current_session.is_some(), self.grid_size, self.difficulty);
+                }
                 _ => {}
             },
             InputEvent::None => {}
