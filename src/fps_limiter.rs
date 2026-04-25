@@ -2,27 +2,32 @@ use macroquad::time::get_time;
 
 pub struct FpsLimiter {
     target_fps: f64,
-    last_frame_time: f64,
+    frame_deadline: f64,
 }
 
 impl FpsLimiter {
     pub fn new(target_fps: f64) -> Self {
         Self {
             target_fps,
-            last_frame_time: get_time(),
+            frame_deadline: get_time(),
         }
     }
 
     pub fn wait_for_next_frame(&mut self) {
-        let target_frame_time = 1.0 / self.target_fps;
-        let current_time = get_time();
-        let elapsed = current_time - self.last_frame_time;
+        let frame_duration = 1.0 / self.target_fps;
+        self.frame_deadline += frame_duration;
 
-        if elapsed < target_frame_time {
-            let sleep_time = target_frame_time - elapsed;
-            std::thread::sleep(std::time::Duration::from_secs_f64(sleep_time));
+        let now = get_time();
+        if now < self.frame_deadline {
+            std::thread::sleep(std::time::Duration::from_secs_f64(
+                self.frame_deadline - now,
+            ));
         }
 
-        self.last_frame_time = get_time();
+        // Reset if a frame genuinely ran long, to avoid a burst of zero-sleep catch-up frames
+        let now = get_time();
+        if self.frame_deadline < now - frame_duration {
+            self.frame_deadline = now;
+        }
     }
 }
