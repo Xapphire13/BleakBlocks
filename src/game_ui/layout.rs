@@ -1,118 +1,65 @@
+mod game_over;
+mod main_menu;
+mod playing;
+mod settings;
+
 use macroquad::{
     math::Rect,
     text::{Font, TextDimensions, measure_text},
-    window::{screen_height, screen_width},
+    window::screen_width,
 };
 
-use crate::{
-    constants::{
-        style::BLOCK_INSET,
-        ui::{BODY_TEXT_SIZE, BUTTON_PADDING, LABEL_TEXT_SIZE, TITLE_TEXT_SIZE, WINDOW_PADDING},
-    },
-    difficulty::Difficulty,
-    grid_size::GridSize,
+use crate::constants::{
+    style::BLOCK_INSET,
+    ui::{BODY_TEXT_SIZE, BUTTON_PADDING},
 };
 
+use super::Fonts;
 use super::buttons::{Button, ButtonId, ButtonStyle};
 
-pub(super) fn compute_settings_layout(
-    title_font: &Font,
-    body_font: &Font,
-    grid_size: GridSize,
-    difficulty: Difficulty,
-) -> (Vec<Button>, f32, f32) {
-    let is_landscape = screen_width() > screen_height();
-    let available_w = screen_width() - 2.0 * WINDOW_PADDING.x;
-    let btn_gap = WINDOW_PADDING.x;
+pub(super) use game_over::GameOverLayout;
+pub(super) use main_menu::MainMenuLayout;
+pub(super) use playing::PlayingLayout;
+pub(super) use settings::SettingsLayout;
 
-    let title_dims = measure_text("Settings", Some(title_font), TITLE_TEXT_SIZE, 1.0);
-    let mut current_y = WINDOW_PADDING.y + title_dims.height + 16.0;
+pub(super) enum ScreenLayout {
+    Playing(PlayingLayout),
+    MainMenu(MainMenuLayout),
+    GameOver(GameOverLayout),
+    Settings(SettingsLayout),
+}
 
-    // Grid size toggles (2×2 layout)
-    let gs_label_dims = measure_text("A", Some(body_font), LABEL_TEXT_SIZE, 1.0);
-    let gs_label_y = current_y;
-    current_y += gs_label_dims.height + 8.0;
-
-    let gs_btn_w = (available_w - btn_gap) / 2.0;
-    let gs_main_dims = measure_text("X-Large", Some(title_font), BODY_TEXT_SIZE, 1.0);
-    let gs_sub_dims = measure_text("00×00", Some(body_font), LABEL_TEXT_SIZE, 1.0);
-    let gs_face_h =
-        BUTTON_PADDING.y + gs_main_dims.height + 4.0 + gs_sub_dims.height + BUTTON_PADDING.y;
-    let gs_btn_h = gs_face_h + BLOCK_INSET;
-
-    let gs_variants = [
-        GridSize::Small,
-        GridSize::Medium,
-        GridSize::Large,
-        GridSize::ExtraLarge,
-    ];
-    let mut buttons = Vec::new();
-    for (i, gs) in gs_variants.iter().enumerate() {
-        let row = i / 2;
-        let col = i % 2;
-        let x = WINDOW_PADDING.x + col as f32 * (gs_btn_w + btn_gap);
-        let y = current_y + row as f32 * (gs_btn_h + btn_gap);
-        let label = gs.label().to_string();
-        let sub_label = gs.size_hint(is_landscape);
-        let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
-        let sub_label_dims = measure_text(&sub_label, Some(body_font), LABEL_TEXT_SIZE, 1.0);
-        buttons.push(Button::new(
-            ButtonId::SetGridSize(*gs),
-            Rect::new(x, y, gs_btn_w, gs_btn_h),
-            label,
-            label_dims,
-            BODY_TEXT_SIZE,
-            ButtonStyle::Toggle {
-                is_selected: *gs == grid_size,
-                sub_label: Some(sub_label),
-                sub_label_dimensions: Some(sub_label_dims),
-            },
-        ));
+impl Default for ScreenLayout {
+    fn default() -> Self {
+        ScreenLayout::MainMenu(MainMenuLayout { buttons: vec![] })
     }
-    current_y += 2.0 * gs_btn_h + btn_gap;
+}
 
-    // Difficulty toggles (1×3 layout)
-    current_y += 20.0;
-    let diff_label_dims = measure_text("A", Some(body_font), LABEL_TEXT_SIZE, 1.0);
-    let diff_label_y = current_y;
-    current_y += diff_label_dims.height + 8.0;
-
-    let diff_btn_w = (available_w - 2.0 * btn_gap) / 3.0;
-    let diff_main_dims = measure_text("Normal", Some(title_font), BODY_TEXT_SIZE, 1.0);
-    let diff_face_h = BUTTON_PADDING.y + diff_main_dims.height + BUTTON_PADDING.y;
-    let diff_btn_h = diff_face_h + BLOCK_INSET;
-
-    let diff_variants = [Difficulty::Easy, Difficulty::Normal, Difficulty::Hard];
-    for (i, diff) in diff_variants.iter().enumerate() {
-        let x = WINDOW_PADDING.x + i as f32 * (diff_btn_w + btn_gap);
-        let label = diff.label().to_string();
-        let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
-        buttons.push(Button::new(
-            ButtonId::SetDifficulty(*diff),
-            Rect::new(x, current_y, diff_btn_w, diff_btn_h),
-            label,
-            label_dims,
-            BODY_TEXT_SIZE,
-            ButtonStyle::Toggle {
-                is_selected: *diff == difficulty,
-                sub_label: None,
-                sub_label_dimensions: None,
-            },
-        ));
+impl ScreenLayout {
+    pub(super) fn buttons(&self) -> &[Button] {
+        match self {
+            ScreenLayout::Playing(l) => &l.buttons,
+            ScreenLayout::MainMenu(l) => &l.buttons,
+            ScreenLayout::GameOver(l) => &l.buttons,
+            ScreenLayout::Settings(l) => &l.buttons,
+        }
     }
-    current_y += diff_btn_h;
 
-    // Back button
-    current_y += 24.0;
-    let back_dims = measure_text("Back", Some(title_font), BODY_TEXT_SIZE, 1.0);
-    let back_baseline = current_y + back_dims.offset_y + BUTTON_PADDING.y;
-    buttons.extend(compute_button_stack(
-        title_font,
-        &[("Back", ButtonId::Back, ButtonStyle::Secondary)],
-        back_baseline,
-    ));
+    pub(super) fn render(&self, fonts: Fonts, blocks_remaining: u32, score: u32) {
+        match self {
+            ScreenLayout::Playing(l) => l.render(fonts, blocks_remaining, score),
+            ScreenLayout::GameOver(l) => l.render(fonts, score),
+            ScreenLayout::MainMenu(l) => l.render(fonts),
+            ScreenLayout::Settings(l) => l.render(fonts),
+        }
+    }
 
-    (buttons, gs_label_y, diff_label_y)
+    pub(super) fn status_panel_height(&self) -> f32 {
+        match self {
+            ScreenLayout::Playing(l) => l.status_panel_height,
+            _ => unreachable!("status_panel_height() must only be called in Playing state"),
+        }
+    }
 }
 
 pub(super) fn compute_button_stack(

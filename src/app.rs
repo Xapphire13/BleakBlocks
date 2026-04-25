@@ -92,16 +92,18 @@ impl App {
         );
 
         // macroquad has no resize event, so we recompute layout each frame
-        if let Some(session) = &mut self.current_session {
-            let panel_h = self.ui.status_panel_height();
-            let (pos, dims) = compute_grid_rect(
-                screen_width(),
-                screen_height(),
-                panel_h,
-                session.layout.rows,
-                session.layout.cols,
-            );
-            session.layout.resize(pos, dims);
+        if self.state == AppState::Playing {
+            if let Some(session) = &mut self.current_session {
+                let panel_h = self.ui.status_panel_height();
+                let (pos, dims) = compute_grid_rect(
+                    screen_width(),
+                    screen_height(),
+                    panel_h,
+                    session.layout.rows,
+                    session.layout.cols,
+                );
+                session.layout.resize(pos, dims);
+            }
         }
 
         match input {
@@ -191,7 +193,6 @@ impl App {
         }
 
         self.ui.render(UiContext {
-            state: self.state,
             score: self.score(),
             blocks_remaining: self.blocks_remaining(),
         });
@@ -332,6 +333,7 @@ impl App {
     }
 
     pub fn new_game(&mut self) {
+        self.set_state(AppState::Playing);
         let is_landscape = screen_width() > screen_height();
         let (rows, cols) = self.grid_size.grid_dims(is_landscape);
         let panel_h = self.ui.status_panel_height();
@@ -342,7 +344,6 @@ impl App {
             score: 0,
             physics_system: PhysicsSystem::new(),
         });
-        self.set_state(AppState::Playing);
     }
 }
 
@@ -375,7 +376,6 @@ pub enum InputEvent {
 }
 
 pub struct UiContext {
-    pub state: AppState,
     pub score: u32,
     pub blocks_remaining: u32,
 }
