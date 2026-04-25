@@ -25,6 +25,12 @@ mod rendering;
 pub use buttons::ButtonId;
 use buttons::{Button, ButtonStyle};
 
+#[derive(Copy, Clone)]
+struct Fonts<'a> {
+    title: &'a Font,
+    body: &'a Font,
+}
+
 pub struct GameUi {
     title_font: Font,
     body_font: Font,
@@ -86,13 +92,12 @@ impl GameUi {
             ),
         }
 
+        let fonts = Fonts {
+            title: &self.title_font,
+            body: &self.body_font,
+        };
         for button in &self.buttons {
-            match &button.style {
-                ButtonStyle::Toggle { .. } => {
-                    rendering::render_toggle_button(&self.title_font, &self.body_font, button);
-                }
-                _ => rendering::render_button(&self.title_font, button),
-            }
+            button.render(fonts);
         }
     }
 

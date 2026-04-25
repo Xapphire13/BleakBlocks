@@ -1,5 +1,4 @@
 use macroquad::{
-    miniquad::window::set_mouse_cursor,
     shapes::draw_rectangle,
     text::{Font, TextParams, draw_text_ex, measure_text},
     window::{screen_height, screen_width},
@@ -8,18 +7,15 @@ use num_format::{Locale, ToFormattedString};
 
 use crate::{
     constants::{
-        style::{BACKGROUND_COLOR, BLOCK_INSET, GRID_BACKGROUND_COLOR},
+        style::{BACKGROUND_COLOR, GRID_BACKGROUND_COLOR},
         ui::{
-            BODY_TEXT_SIZE, BUTTON_BACKGROUND_COLOR, BUTTON_SHADOW_COLOR, CARD_BORDER_COLOR,
-            CONTAINER_INNER_PADDING, CORNER_RADIUS, LABEL_TEXT_COLOR, LABEL_TEXT_SIZE,
-            LABEL_VALUE_GAP, LABEL_VALUE_SIZE, PRIMARY_BUTTON_COLOR, PRIMARY_BUTTON_HOVER_COLOR,
-            PRIMARY_BUTTON_SHADOW_COLOR, TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING,
+            BODY_TEXT_SIZE, CARD_BORDER_COLOR, CONTAINER_INNER_PADDING, CORNER_RADIUS,
+            LABEL_TEXT_COLOR, LABEL_TEXT_SIZE, LABEL_VALUE_GAP, LABEL_VALUE_SIZE, TEXT_COLOR,
+            TITLE_TEXT_SIZE, WINDOW_PADDING,
         },
     },
     drawing::draw_rounded_rect,
 };
-
-use super::buttons::{Button, ButtonStyle};
 
 pub(super) fn render_status_panel(
     title_font: &Font,
@@ -218,174 +214,4 @@ pub(super) fn render_settings(
             ..Default::default()
         },
     );
-}
-
-pub(super) fn render_button(title_font: &Font, button: &Button) {
-    let (border_color, fill_color, hover_color, shadow_color) =
-        if matches!(button.style, ButtonStyle::Primary) {
-            (
-                PRIMARY_BUTTON_COLOR,
-                PRIMARY_BUTTON_COLOR,
-                PRIMARY_BUTTON_HOVER_COLOR,
-                PRIMARY_BUTTON_SHADOW_COLOR,
-            )
-        } else {
-            (
-                CARD_BORDER_COLOR,
-                BUTTON_BACKGROUND_COLOR,
-                CARD_BORDER_COLOR,
-                BUTTON_SHADOW_COLOR,
-            )
-        };
-
-    let fill = if button.is_hovered() {
-        set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
-        hover_color
-    } else {
-        fill_color
-    };
-
-    let face_h = button.bounds.h - BLOCK_INSET;
-
-    draw_rounded_rect(
-        button.bounds.x,
-        button.bounds.y,
-        button.bounds.w,
-        button.bounds.h,
-        CORNER_RADIUS,
-        shadow_color,
-    );
-    draw_rounded_rect(
-        button.bounds.x,
-        button.bounds.y,
-        button.bounds.w,
-        face_h,
-        CORNER_RADIUS,
-        border_color,
-    );
-    draw_rounded_rect(
-        button.bounds.x + 1.0,
-        button.bounds.y + 1.0,
-        button.bounds.w - 2.0,
-        face_h - 2.0,
-        CORNER_RADIUS - 1.0,
-        fill,
-    );
-
-    let face_center_y = button.bounds.y + face_h / 2.0;
-    draw_text_ex(
-        &button.label,
-        button.bounds.center().x - button.label_dimensions.width / 2.0,
-        face_center_y - button.label_dimensions.height / 2.0 + button.label_dimensions.offset_y,
-        TextParams {
-            font_size: button.font_size,
-            color: TEXT_COLOR,
-            font: Some(title_font),
-            ..Default::default()
-        },
-    );
-}
-
-pub(super) fn render_toggle_button(title_font: &Font, body_font: &Font, button: &Button) {
-    let ButtonStyle::Toggle {
-        is_selected,
-        sub_label,
-        sub_label_dimensions,
-    } = &button.style
-    else {
-        return;
-    };
-
-    let (border_color, fill_color, hover_color, shadow_color) = if *is_selected {
-        (
-            PRIMARY_BUTTON_COLOR,
-            PRIMARY_BUTTON_COLOR,
-            PRIMARY_BUTTON_HOVER_COLOR,
-            PRIMARY_BUTTON_SHADOW_COLOR,
-        )
-    } else {
-        (
-            CARD_BORDER_COLOR,
-            BUTTON_BACKGROUND_COLOR,
-            CARD_BORDER_COLOR,
-            BUTTON_SHADOW_COLOR,
-        )
-    };
-
-    let fill = if button.is_hovered() {
-        set_mouse_cursor(macroquad::miniquad::CursorIcon::Pointer);
-        hover_color
-    } else {
-        fill_color
-    };
-
-    let face_h = button.bounds.h - BLOCK_INSET;
-
-    draw_rounded_rect(
-        button.bounds.x,
-        button.bounds.y,
-        button.bounds.w,
-        button.bounds.h,
-        CORNER_RADIUS,
-        shadow_color,
-    );
-    draw_rounded_rect(
-        button.bounds.x,
-        button.bounds.y,
-        button.bounds.w,
-        face_h,
-        CORNER_RADIUS,
-        border_color,
-    );
-    draw_rounded_rect(
-        button.bounds.x + 1.0,
-        button.bounds.y + 1.0,
-        button.bounds.w - 2.0,
-        face_h - 2.0,
-        CORNER_RADIUS - 1.0,
-        fill,
-    );
-
-    let center_x = button.bounds.center().x;
-
-    if let (Some(sub_label), Some(sub_dims)) = (sub_label, sub_label_dimensions) {
-        let total_text_h = button.label_dimensions.height + 4.0 + sub_dims.height;
-        let text_top = button.bounds.y + (face_h - total_text_h) / 2.0;
-
-        draw_text_ex(
-            &button.label,
-            center_x - button.label_dimensions.width / 2.0,
-            text_top + button.label_dimensions.offset_y,
-            TextParams {
-                font_size: BODY_TEXT_SIZE,
-                color: TEXT_COLOR,
-                font: Some(title_font),
-                ..Default::default()
-            },
-        );
-        draw_text_ex(
-            sub_label,
-            center_x - sub_dims.width / 2.0,
-            text_top + button.label_dimensions.height + 4.0 + sub_dims.offset_y,
-            TextParams {
-                font_size: LABEL_TEXT_SIZE,
-                color: TEXT_COLOR,
-                font: Some(body_font),
-                ..Default::default()
-            },
-        );
-    } else {
-        let face_center_y = button.bounds.y + face_h / 2.0;
-        draw_text_ex(
-            &button.label,
-            center_x - button.label_dimensions.width / 2.0,
-            face_center_y - button.label_dimensions.height / 2.0 + button.label_dimensions.offset_y,
-            TextParams {
-                font_size: BODY_TEXT_SIZE,
-                color: TEXT_COLOR,
-                font: Some(title_font),
-                ..Default::default()
-            },
-        );
-    }
 }
