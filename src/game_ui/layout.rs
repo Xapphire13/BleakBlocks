@@ -1,4 +1,5 @@
 mod game_over;
+mod high_scores;
 mod main_menu;
 mod playing;
 mod settings;
@@ -18,6 +19,7 @@ use super::Fonts;
 use super::buttons::{Button, ButtonId, ButtonStyle};
 
 pub use game_over::GameOverLayout;
+pub use high_scores::HighScoresLayout;
 pub use main_menu::MainMenuLayout;
 pub use playing::{PlayingLayout, compute_status_panel_height};
 pub use settings::SettingsLayout;
@@ -27,6 +29,7 @@ pub enum ScreenLayout {
     MainMenu(MainMenuLayout),
     GameOver(GameOverLayout),
     Settings(SettingsLayout),
+    HighScores(HighScoresLayout),
 }
 
 impl Default for ScreenLayout {
@@ -42,6 +45,7 @@ impl ScreenLayout {
             ScreenLayout::MainMenu(l) => &l.buttons,
             ScreenLayout::GameOver(l) => &l.buttons,
             ScreenLayout::Settings(l) => &l.buttons,
+            ScreenLayout::HighScores(l) => &l.buttons,
         }
     }
 
@@ -51,6 +55,7 @@ impl ScreenLayout {
             ScreenLayout::GameOver(l) => l.render(fonts, score),
             ScreenLayout::MainMenu(l) => l.render(fonts),
             ScreenLayout::Settings(l) => l.render(fonts),
+            ScreenLayout::HighScores(l) => l.render(fonts),
         }
     }
 

@@ -30,6 +30,7 @@ use crate::{
     game_ui::{ButtonId, GameUi, compute_status_panel_height},
     grid_layout::GridLayout,
     grid_size::GridSize,
+    high_scores::HighScores,
     orientation::Orientation,
     physics_system::PhysicsSystem,
     sprite_sheet::SpriteSheet,
@@ -41,6 +42,7 @@ pub enum AppState {
     GameOver,
     MainMenu,
     Settings,
+    HighScores,
 }
 
 pub struct App {
@@ -53,6 +55,7 @@ pub struct App {
     difficulty: Difficulty,
     orientation: Orientation,
     last_screen_size: Vec2,
+    high_scores: HighScores,
 }
 
 impl App {
@@ -74,6 +77,7 @@ impl App {
             difficulty,
             orientation,
             last_screen_size: Vec2::ZERO,
+            high_scores: HighScores::load(),
         }
     }
 
@@ -114,6 +118,7 @@ impl App {
                 self.grid_size,
                 self.difficulty,
                 self.orientation,
+                &self.high_scores,
             );
 
             if self.state == AppState::Playing {
@@ -157,6 +162,7 @@ impl App {
                     }
                 }
                 ButtonId::Settings => self.set_state(AppState::Settings),
+                ButtonId::HighScores => self.set_state(AppState::HighScores),
                 ButtonId::Back => self.set_state(AppState::MainMenu),
                 ButtonId::SetGridSize(s) => {
                     self.grid_size = s;
@@ -166,6 +172,7 @@ impl App {
                         self.grid_size,
                         self.difficulty,
                         self.orientation,
+                        &self.high_scores,
                     );
                 }
                 ButtonId::SetDifficulty(d) => {
@@ -176,6 +183,7 @@ impl App {
                         self.grid_size,
                         self.difficulty,
                         self.orientation,
+                        &self.high_scores,
                     );
                 }
                 ButtonId::SetOrientation(o) => {
@@ -186,19 +194,27 @@ impl App {
                         self.grid_size,
                         self.difficulty,
                         self.orientation,
+                        &self.high_scores,
                     );
                 }
-                _ => {}
             },
             InputEvent::None => {}
         }
 
         if self.state == AppState::Playing {
+            if let Some(session) = &self.current_session
+                && session.is_game_over()
+            {
+                self.high_scores
+                    .record(session.grid_size, session.difficulty, session.score);
+                self.set_state(AppState::GameOver);
+            };
+
             if let Some(session) = &mut self.current_session {
                 match session.state {
                     GameState::Playing => {
                         if session.is_game_over() {
-                            self.set_state(AppState::GameOver);
+                            // already handled above
                         } else if let Some(falling_blocks) = session.layout.find_falling_blocks() {
                             falling_blocks.into_iter().for_each(|(from, to)| {
                                 session.physics_system.queue_block_animation(from, to)
@@ -276,6 +292,7 @@ impl App {
             self.grid_size,
             self.difficulty,
             self.orientation,
+            &self.high_scores,
         );
     }
 
@@ -416,6 +433,8 @@ impl App {
         let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h, rows, cols);
         self.current_session = Some(GameSession {
             state: GameState::Playing,
+            grid_size: self.grid_size,
+            difficulty: self.difficulty,
             layout: GridLayout::new(pos, dims, rows, cols, self.difficulty.block_type_count()),
             score: 0,
             physics_system: PhysicsSystem::new(),

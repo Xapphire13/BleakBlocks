@@ -1,6 +1,6 @@
 use crate::orientation::Orientation;
 
-#[derive(Copy, Clone, PartialEq, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize)]
 pub enum GridSize {
     Small,
     #[default]

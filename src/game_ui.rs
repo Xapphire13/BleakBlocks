@@ -7,6 +7,7 @@ use crate::{
     app::{AppState, UiContext},
     difficulty::Difficulty,
     grid_size::GridSize,
+    high_scores::HighScores,
     orientation::Orientation,
 };
 
@@ -16,7 +17,9 @@ mod layout;
 pub use buttons::ButtonId;
 
 pub use layout::compute_status_panel_height;
-use layout::{GameOverLayout, MainMenuLayout, PlayingLayout, ScreenLayout, SettingsLayout};
+use layout::{
+    GameOverLayout, HighScoresLayout, MainMenuLayout, PlayingLayout, ScreenLayout, SettingsLayout,
+};
 
 #[derive(Copy, Clone)]
 struct Fonts<'a> {
@@ -85,6 +88,7 @@ impl GameUi {
         grid_size: GridSize,
         difficulty: Difficulty,
         orientation: Orientation,
+        high_scores: &HighScores,
     ) {
         self.screen = match app_state {
             AppState::Playing => {
@@ -100,6 +104,12 @@ impl GameUi {
                 grid_size,
                 difficulty,
                 orientation,
+            )),
+            AppState::HighScores => ScreenLayout::HighScores(HighScoresLayout::compute(
+                &self.title_font,
+                &self.body_font,
+                difficulty,
+                high_scores,
             )),
         };
     }
