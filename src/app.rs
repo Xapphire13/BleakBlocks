@@ -8,6 +8,8 @@ use macroquad::{
     window::{clear_background, screen_height, screen_width},
 };
 
+use crate::window_chrome::WindowChrome;
+
 use crate::{
     block::{Block, BlockState},
     constants::{
@@ -17,15 +19,15 @@ use crate::{
             EMPTY_BLOCK_COLOR, GRID_BACKGROUND_COLOR,
         },
         ui::{
-            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP, CONTAINER_INNER_PADDING,
-            CORNER_RADIUS, WINDOW_PADDING,
+            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP, CHROME_HEIGHT,
+            CONTAINER_INNER_PADDING, CORNER_RADIUS, WINDOW_PADDING,
         },
     },
     coordinate::{Coordinate, coordinate},
     difficulty::Difficulty,
     drawing::{draw_rounded_rect, draw_rounded_rect_asymmetric},
     game_session::{GameSession, GameState},
-    game_ui::{ButtonId, GameUi},
+    game_ui::{ButtonId, GameUi, compute_status_panel_height},
     grid_layout::GridLayout,
     grid_size::GridSize,
     physics_system::PhysicsSystem,
@@ -44,6 +46,7 @@ pub struct App {
     state: AppState,
     sprite_sheet: SpriteSheet,
     ui: GameUi,
+    window_chrome: WindowChrome,
     current_session: Option<GameSession>,
     grid_size: GridSize,
     difficulty: Difficulty,
@@ -55,10 +58,14 @@ impl App {
         let app_state = AppState::MainMenu;
         let grid_size = GridSize::default();
         let difficulty = Difficulty::default();
+        let ui = GameUi::new();
+        let panel_h = compute_status_panel_height(ui.title_font(), ui.body_font());
+        let (rows, cols) = grid_size.grid_dims(false);
         Self {
             state: app_state,
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 512.0),
-            ui: GameUi::new(),
+            window_chrome: WindowChrome::new(rows, cols, panel_h),
+            ui,
             current_session: None,
             grid_size,
             difficulty,
@@ -67,12 +74,17 @@ impl App {
     }
 
     pub fn handle_input(&mut self) -> (InputEvent, FrameState) {
+        self.window_chrome
+            .handle_input(self.state == AppState::Playing);
+
         let mut frame_state = FrameState::default();
         let mut input_event = InputEvent::None;
 
+        let (_, my) = mouse_position();
+
         if self.state == AppState::Playing {
             if let Some(session) = &self.current_session {
-                if is_mouse_button_pressed(MouseButton::Left) {
+                if is_mouse_button_pressed(MouseButton::Left) && my >= CHROME_HEIGHT {
                     input_event = InputEvent::BlockClicked(mouse_position().into());
                 } else if let Some(position) = session.layout.world_to_grid(mouse_position().into())
                 {
@@ -127,7 +139,18 @@ impl App {
                 ButtonId::Menu => self.set_state(AppState::MainMenu),
                 ButtonId::NewGame => self.new_game(),
                 ButtonId::Pause => self.set_state(AppState::MainMenu),
-                ButtonId::Resume => self.set_state(AppState::Playing),
+                ButtonId::Resume => {
+                    self.set_state(AppState::Playing);
+                    let grid_dims = self
+                        .current_session
+                        .as_ref()
+                        .map(|s| (s.layout.rows, s.layout.cols));
+                    if let Some((rows, cols)) = grid_dims {
+                        let sw = screen_width();
+                        let sh = screen_height();
+                        self.fit_window_to_grid(sw, sh, rows, cols);
+                    }
+                }
                 ButtonId::Settings => self.set_state(AppState::Settings),
                 ButtonId::Back => self.set_state(AppState::MainMenu),
                 ButtonId::SetGridSize(s) => {
@@ -220,6 +243,8 @@ impl App {
             score: self.score(),
             blocks_remaining: self.blocks_remaining(),
         });
+
+        self.window_chrome.render(self.ui.body_font());
     }
 
     pub fn set_state(&mut self, state: AppState) {
@@ -365,8 +390,11 @@ impl App {
 
     pub fn new_game(&mut self) {
         self.set_state(AppState::Playing);
-        let is_landscape = screen_width() > screen_height();
+        let sw = screen_width();
+        let sh = screen_height();
+        let is_landscape = sw > sh;
         let (rows, cols) = self.grid_size.grid_dims(is_landscape);
+        self.fit_window_to_grid(sw, sh, rows, cols);
         let panel_h = self.ui.status_panel_height();
         let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h, rows, cols);
         self.current_session = Some(GameSession {
@@ -375,6 +403,11 @@ impl App {
             score: 0,
             physics_system: PhysicsSystem::new(),
         });
+    }
+
+    fn fit_window_to_grid(&mut self, sw: f32, sh: f32, rows: u32, cols: u32) {
+        let panel_h = compute_status_panel_height(self.ui.title_font(), self.ui.body_font());
+        self.window_chrome.fit_to_grid(sw, sh, rows, cols, panel_h);
     }
 }
 
@@ -387,7 +420,7 @@ fn compute_grid_rect(
 ) -> (Vec2, Vec2) {
     let panel_y = screen_h - status_panel_h;
     let container_x = WINDOW_PADDING.x;
-    let container_y = WINDOW_PADDING.y;
+    let container_y = CHROME_HEIGHT + WINDOW_PADDING.y;
     let container_w = screen_w - WINDOW_PADDING.x * 2.0;
     let container_h = panel_y - WINDOW_PADDING.y - container_y;
     let available_w = container_w - CONTAINER_INNER_PADDING * 2.0;

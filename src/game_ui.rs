@@ -14,6 +14,7 @@ mod layout;
 
 pub use buttons::ButtonId;
 
+pub use layout::compute_status_panel_height;
 use layout::{GameOverLayout, MainMenuLayout, PlayingLayout, ScreenLayout, SettingsLayout};
 
 #[derive(Copy, Clone)]
@@ -40,6 +41,14 @@ impl GameUi {
             body_font,
             screen: ScreenLayout::default(),
         }
+    }
+
+    pub fn title_font(&self) -> &Font {
+        &self.title_font
+    }
+
+    pub fn body_font(&self) -> &Font {
+        &self.body_font
     }
 
     pub fn status_panel_height(&self) -> f32 {

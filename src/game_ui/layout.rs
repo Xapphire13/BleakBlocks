@@ -19,7 +19,7 @@ use super::buttons::{Button, ButtonId, ButtonStyle};
 
 pub use game_over::GameOverLayout;
 pub use main_menu::MainMenuLayout;
-pub use playing::PlayingLayout;
+pub use playing::{PlayingLayout, compute_status_panel_height};
 pub use settings::SettingsLayout;
 
 pub enum ScreenLayout {

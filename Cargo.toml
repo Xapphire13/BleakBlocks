@@ -9,6 +9,11 @@ macroquad = "0.4.14"
 num-format = "0.4.4"
 strum = { version = "0.27.2", features = ["derive"] }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.4"
+objc2-foundation = { version = "0.3.2", features = ["NSGeometry"] }
+objc2-app-kit = { version = "0.3.2", features = ["NSEvent"] }
+
 [package.metadata.packager]
 product-name = "Bleak Blocks"
 identifier = "com.xapphire13.bleak-blocks"

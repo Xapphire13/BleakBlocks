@@ -17,13 +17,14 @@ mod grid_layout;
 mod grid_size;
 mod physics_system;
 mod sprite_sheet;
+mod window_chrome;
 
 fn window_conf() -> Conf {
     Conf {
         window_title: "Bleak Blocks".to_owned(),
         window_height: 585,
         window_width: 500,
-        window_resizable: true,
+        window_resizable: false, // We handle our own resizing
         high_dpi: true,
         icon: None,
         ..Default::default()

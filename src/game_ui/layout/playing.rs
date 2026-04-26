@@ -26,15 +26,19 @@ pub struct PlayingLayout {
     pub buttons: Vec<Button>,
 }
 
+pub fn compute_status_panel_height(title_font: &Font, body_font: &Font) -> f32 {
+    let label_dims = measure_text("A", Some(body_font), BODY_TEXT_SIZE, 1.0);
+    let value_dims = measure_text("A", Some(title_font), LABEL_VALUE_SIZE, 1.0);
+    WINDOW_PADDING.y * 2.0
+        + CONTAINER_INNER_PADDING * 2.0
+        + label_dims.height
+        + LABEL_VALUE_GAP
+        + value_dims.height
+}
+
 impl PlayingLayout {
     pub fn compute(title_font: &Font, body_font: &Font) -> Self {
-        let label_dims = measure_text("A", Some(body_font), BODY_TEXT_SIZE, 1.0);
-        let value_dims = measure_text("A", Some(title_font), LABEL_VALUE_SIZE, 1.0);
-        let status_panel_height = WINDOW_PADDING.y * 2.0
-            + CONTAINER_INNER_PADDING * 2.0
-            + label_dims.height
-            + LABEL_VALUE_GAP
-            + value_dims.height;
+        let status_panel_height = compute_status_panel_height(title_font, body_font);
 
         let panel_y = screen_height() - status_panel_height;
         let card_h = status_panel_height - WINDOW_PADDING.y * 2.0;

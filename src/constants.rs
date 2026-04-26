@@ -47,4 +47,15 @@ pub mod ui {
     pub const PRIMARY_BUTTON_COLOR: Color = Color::from_hex(0x9001FE);
     pub const PRIMARY_BUTTON_HOVER_COLOR: Color = Color::from_hex(0xAA30FE);
     pub const PRIMARY_BUTTON_SHADOW_COLOR: Color = Color::from_hex(0x560198); // PRIMARY_BUTTON_COLOR * 0.6
+
+    // Custom window chrome
+    pub const CHROME_HEIGHT: f32 = 40.0;
+    pub const CHROME_TRAFFIC_LIGHT_SIZE: f32 = 14.0;
+    pub const CHROME_TRAFFIC_LIGHT_PADDING: f32 = 16.0;
+    pub const CHROME_TRAFFIC_LIGHT_SPACING: f32 = 24.0;
+    pub const CHROME_TITLE_TEXT_SIZE: u16 = 20;
+    pub const CHROME_CLOSE_COLOR: Color = Color::from_hex(0xFF5F57);
+    pub const CHROME_MINIMIZE_COLOR: Color = Color::from_hex(0xFEBC2E);
+    pub const CHROME_ZOOM_COLOR: Color = Color::from_hex(0x28C840);
+    pub const CHROME_BUTTON_INACTIVE_COLOR: Color = Color::from_hex(0x4E3F63);
 }

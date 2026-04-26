@@ -2,7 +2,9 @@ use macroquad::text::{Font, TextParams, draw_text_ex, measure_text};
 use macroquad::window::{screen_height, screen_width};
 use num_format::{Locale, ToFormattedString};
 
-use crate::constants::ui::{BODY_TEXT_SIZE, TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING};
+use crate::constants::ui::{
+    BODY_TEXT_SIZE, CHROME_HEIGHT, TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING,
+};
 
 use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
@@ -30,7 +32,7 @@ impl GameOverLayout {
 
         let text = "Game Over!";
         let dims = measure_text(text, Some(fonts.title), TITLE_TEXT_SIZE, 1.0);
-        let y = (screen_h - dims.height) / 2.0;
+        let y = CHROME_HEIGHT + (screen_h - CHROME_HEIGHT - dims.height) / 2.0;
         draw_text_ex(
             text,
             (screen_w - dims.width) / 2.0,
