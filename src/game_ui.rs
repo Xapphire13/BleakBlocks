@@ -7,6 +7,7 @@ use crate::{
     app::{AppState, UiContext},
     difficulty::Difficulty,
     grid_size::GridSize,
+    orientation::Orientation,
 };
 
 mod buttons;
@@ -83,6 +84,7 @@ impl GameUi {
         is_existing_game: bool,
         grid_size: GridSize,
         difficulty: Difficulty,
+        orientation: Orientation,
     ) {
         self.screen = match app_state {
             AppState::Playing => {
@@ -97,6 +99,7 @@ impl GameUi {
                 &self.body_font,
                 grid_size,
                 difficulty,
+                orientation,
             )),
         };
     }

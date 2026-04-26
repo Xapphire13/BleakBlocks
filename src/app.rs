@@ -30,6 +30,7 @@ use crate::{
     game_ui::{ButtonId, GameUi, compute_status_panel_height},
     grid_layout::GridLayout,
     grid_size::GridSize,
+    orientation::Orientation,
     physics_system::PhysicsSystem,
     sprite_sheet::SpriteSheet,
 };
@@ -50,6 +51,7 @@ pub struct App {
     current_session: Option<GameSession>,
     grid_size: GridSize,
     difficulty: Difficulty,
+    orientation: Orientation,
     last_screen_size: Vec2,
 }
 
@@ -58,9 +60,10 @@ impl App {
         let app_state = AppState::MainMenu;
         let grid_size = GridSize::default();
         let difficulty = Difficulty::default();
+        let orientation = Orientation::default();
         let ui = GameUi::new();
         let panel_h = compute_status_panel_height(ui.title_font(), ui.body_font());
-        let (rows, cols) = grid_size.grid_dims(false);
+        let (rows, cols) = grid_size.grid_dims(orientation);
         Self {
             state: app_state,
             sprite_sheet: SpriteSheet::new(include_bytes!("../assets/sprites.png"), 2, 4, 512.0),
@@ -69,6 +72,7 @@ impl App {
             current_session: None,
             grid_size,
             difficulty,
+            orientation,
             last_screen_size: Vec2::ZERO,
         }
     }
@@ -109,6 +113,7 @@ impl App {
                 self.current_session.is_some(),
                 self.grid_size,
                 self.difficulty,
+                self.orientation,
             );
 
             if self.state == AppState::Playing {
@@ -160,6 +165,7 @@ impl App {
                         self.current_session.is_some(),
                         self.grid_size,
                         self.difficulty,
+                        self.orientation,
                     );
                 }
                 ButtonId::SetDifficulty(d) => {
@@ -169,6 +175,17 @@ impl App {
                         self.current_session.is_some(),
                         self.grid_size,
                         self.difficulty,
+                        self.orientation,
+                    );
+                }
+                ButtonId::SetOrientation(o) => {
+                    self.orientation = o;
+                    self.ui.update_buttons(
+                        self.state,
+                        self.current_session.is_some(),
+                        self.grid_size,
+                        self.difficulty,
+                        self.orientation,
                     );
                 }
                 _ => {}
@@ -258,6 +275,7 @@ impl App {
             self.current_session.is_some(),
             self.grid_size,
             self.difficulty,
+            self.orientation,
         );
     }
 
@@ -392,8 +410,7 @@ impl App {
         self.set_state(AppState::Playing);
         let sw = screen_width();
         let sh = screen_height();
-        let is_landscape = sw > sh;
-        let (rows, cols) = self.grid_size.grid_dims(is_landscape);
+        let (rows, cols) = self.grid_size.grid_dims(self.orientation);
         self.fit_window_to_grid(sw, sh, rows, cols);
         let panel_h = self.ui.status_panel_height();
         let (pos, dims) = compute_grid_rect(screen_width(), screen_height(), panel_h, rows, cols);
@@ -407,7 +424,8 @@ impl App {
 
     fn fit_window_to_grid(&mut self, sw: f32, sh: f32, rows: u32, cols: u32) {
         let panel_h = compute_status_panel_height(self.ui.title_font(), self.ui.body_font());
-        self.window_chrome.fit_to_grid(sw, sh, rows, cols, panel_h);
+        self.window_chrome
+            .fit_to_grid(sw, sh, rows, cols, panel_h, self.orientation);
     }
 }
 

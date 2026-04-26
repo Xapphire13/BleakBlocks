@@ -24,6 +24,7 @@ use crate::{
         },
     },
     drawing::draw_circle_pixelated,
+    orientation::Orientation,
 };
 
 #[cfg(target_os = "macos")]
@@ -407,18 +408,15 @@ impl WindowChrome {
         rows: u32,
         cols: u32,
         panel_h: f32,
+        orientation: Orientation,
     ) {
         self.grid_rows = rows;
         self.grid_cols = cols;
         self.panel_h = panel_h;
 
-        let is_landscape = screen_w >= screen_h;
-        let (new_w, new_h) = if is_landscape {
-            let new_w = self.height_to_width(screen_h);
-            (new_w, screen_h)
-        } else {
-            let new_h = self.width_to_height(screen_w);
-            (screen_w, new_h)
+        let (new_w, new_h) = match orientation {
+            Orientation::Landscape => (self.height_to_width(screen_h), screen_h),
+            Orientation::Portrait => (screen_w, self.width_to_height(screen_w)),
         };
         self.set_content_size_platform(new_w, new_h);
     }

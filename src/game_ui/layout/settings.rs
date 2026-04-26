@@ -1,7 +1,7 @@
 use macroquad::{
     math::Rect,
     text::{Font, TextParams, draw_text_ex, measure_text},
-    window::{screen_height, screen_width},
+    window::screen_width,
 };
 
 use crate::{
@@ -14,6 +14,7 @@ use crate::{
     },
     difficulty::Difficulty,
     grid_size::GridSize,
+    orientation::Orientation,
 };
 
 use super::super::Fonts;
@@ -22,6 +23,7 @@ use super::compute_button_stack;
 
 pub struct SettingsLayout {
     pub grid_size_label_y: f32,
+    pub orientation_label_y: f32,
     pub difficulty_label_y: f32,
     pub buttons: Vec<Button>,
 }
@@ -32,8 +34,8 @@ impl SettingsLayout {
         body_font: &Font,
         grid_size: GridSize,
         difficulty: Difficulty,
+        orientation: Orientation,
     ) -> Self {
-        let is_landscape = screen_width() > screen_height();
         let available_w = screen_width() - 2.0 * WINDOW_PADDING.x;
         let btn_gap = WINDOW_PADDING.x;
 
@@ -64,7 +66,7 @@ impl SettingsLayout {
             let x = WINDOW_PADDING.x + col as f32 * (gs_btn_w + btn_gap);
             let y = current_y + row as f32 * (gs_btn_h + btn_gap);
             let label = gs.label().to_string();
-            let sub_label = gs.size_hint(is_landscape);
+            let sub_label = gs.size_hint(orientation);
             let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
             let sub_label_dims = measure_text(&sub_label, Some(body_font), LABEL_TEXT_SIZE, 1.0);
             buttons.push(Button::new(
@@ -81,6 +83,36 @@ impl SettingsLayout {
             ));
         }
         current_y += 2.0 * gs_btn_h + btn_gap;
+
+        current_y += 20.0;
+        let orient_label_dims = measure_text("A", Some(body_font), LABEL_TEXT_SIZE, 1.0);
+        let orientation_label_y = current_y;
+        current_y += orient_label_dims.height + 8.0;
+
+        let orient_btn_w = (available_w - btn_gap) / 2.0;
+        let orient_main_dims = measure_text("Landscape", Some(title_font), BODY_TEXT_SIZE, 1.0);
+        let orient_face_h = BUTTON_PADDING.y + orient_main_dims.height + BUTTON_PADDING.y;
+        let orient_btn_h = orient_face_h + BLOCK_INSET;
+
+        let orient_variants = [Orientation::Portrait, Orientation::Landscape];
+        for (i, o) in orient_variants.iter().enumerate() {
+            let x = WINDOW_PADDING.x + i as f32 * (orient_btn_w + btn_gap);
+            let label = o.label().to_string();
+            let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
+            buttons.push(Button::new(
+                ButtonId::SetOrientation(*o),
+                Rect::new(x, current_y, orient_btn_w, orient_btn_h),
+                label,
+                label_dims,
+                BODY_TEXT_SIZE,
+                ButtonStyle::Toggle {
+                    is_selected: *o == orientation,
+                    sub_label: None,
+                    sub_label_dimensions: None,
+                },
+            ));
+        }
+        current_y += orient_btn_h;
 
         current_y += 20.0;
         let diff_label_dims = measure_text("A", Some(body_font), LABEL_TEXT_SIZE, 1.0);
@@ -123,6 +155,7 @@ impl SettingsLayout {
 
         Self {
             grid_size_label_y,
+            orientation_label_y,
             difficulty_label_y,
             buttons,
         }
@@ -148,6 +181,17 @@ impl SettingsLayout {
             "GRID SIZE",
             WINDOW_PADDING.x,
             self.grid_size_label_y + label_dims.offset_y,
+            TextParams {
+                font_size: LABEL_TEXT_SIZE,
+                color: LABEL_TEXT_COLOR,
+                font: Some(fonts.body),
+                ..Default::default()
+            },
+        );
+        draw_text_ex(
+            "ORIENTATION",
+            WINDOW_PADDING.x,
+            self.orientation_label_y + label_dims.offset_y,
             TextParams {
                 font_size: LABEL_TEXT_SIZE,
                 color: LABEL_TEXT_COLOR,

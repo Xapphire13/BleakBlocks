@@ -15,6 +15,7 @@ mod game_session;
 mod game_ui;
 mod grid_layout;
 mod grid_size;
+mod orientation;
 mod physics_system;
 mod sprite_sheet;
 mod window_chrome;

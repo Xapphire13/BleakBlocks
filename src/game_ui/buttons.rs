@@ -17,6 +17,7 @@ use crate::{
     difficulty::Difficulty,
     drawing::draw_rounded_rect,
     grid_size::GridSize,
+    orientation::Orientation,
 };
 
 #[derive(PartialEq, Clone)]
@@ -30,6 +31,7 @@ pub enum ButtonId {
     Back,
     SetGridSize(GridSize),
     SetDifficulty(Difficulty),
+    SetOrientation(Orientation),
 }
 
 #[derive(Clone)]
