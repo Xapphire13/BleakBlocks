@@ -6,6 +6,7 @@ use crate::{app::App, fps_limiter::FpsLimiter};
 
 mod app;
 mod block;
+mod blur;
 mod constants;
 mod coordinate;
 mod difficulty;

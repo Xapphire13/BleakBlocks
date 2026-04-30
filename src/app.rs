@@ -1,13 +1,17 @@
 use std::collections::HashSet;
 
 use macroquad::{
+    camera::{Camera2D, set_camera, set_default_camera},
     color::Color,
     input::{MouseButton, is_mouse_button_pressed, mouse_position},
     math::{Vec2, vec2},
+    shapes::draw_rectangle,
+    texture::{FilterMode, RenderTarget, render_target},
     time::get_frame_time,
     window::{clear_background, screen_height, screen_width},
 };
 
+use crate::blur::BlurPipeline;
 use crate::window_chrome::WindowChrome;
 
 use crate::{
@@ -20,7 +24,7 @@ use crate::{
         },
         ui::{
             BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP, CHROME_HEIGHT,
-            CONTAINER_INNER_PADDING, CORNER_RADIUS, WINDOW_PADDING,
+            CONTAINER_INNER_PADDING, CORNER_RADIUS, MODAL_SCRIM_COLOR, WINDOW_PADDING,
         },
     },
     coordinate::{Coordinate, coordinate},
@@ -56,6 +60,8 @@ pub struct App {
     orientation: Orientation,
     last_screen_size: Vec2,
     high_scores: HighScores,
+    blur_pipeline: BlurPipeline,
+    game_snapshot: Option<RenderTarget>,
 }
 
 impl App {
@@ -78,12 +84,14 @@ impl App {
             orientation,
             last_screen_size: Vec2::ZERO,
             high_scores: HighScores::load(),
+            blur_pipeline: BlurPipeline::new(),
+            game_snapshot: None,
         }
     }
 
     pub fn handle_input(&mut self) -> (InputEvent, FrameState) {
         self.window_chrome
-            .handle_input(self.state == AppState::Playing);
+            .handle_input(self.state == AppState::Playing || self.state == AppState::GameOver);
 
         let mut frame_state = FrameState::default();
         let mut input_event = InputEvent::None;
@@ -112,6 +120,9 @@ impl App {
         let current_size = vec2(screen_width(), screen_height());
         if current_size != self.last_screen_size {
             self.last_screen_size = current_size;
+            if self.state == AppState::GameOver {
+                self.game_snapshot = None;
+            }
             self.ui.update_buttons(
                 self.state,
                 self.current_session.is_some(),
@@ -121,9 +132,10 @@ impl App {
                 &self.high_scores,
             );
 
-            if self.state == AppState::Playing {
+            if self.state == AppState::Playing || self.state == AppState::GameOver {
                 if let Some(session) = &mut self.current_session {
-                    let panel_h = self.ui.status_panel_height();
+                    let panel_h =
+                        compute_status_panel_height(self.ui.title_font(), self.ui.body_font());
                     let (pos, dims) = compute_grid_rect(
                         current_size.x,
                         current_size.y,
@@ -262,13 +274,24 @@ impl App {
         }
     }
 
-    pub fn render(&self, frame_state: FrameState) {
+    pub fn render(&mut self, frame_state: FrameState) {
         clear_background(BACKGROUND_COLOR);
 
-        if self.state == AppState::Playing {
+        if self.state == AppState::GameOver {
+            if self.game_snapshot.is_none() {
+                self.take_game_snapshot();
+            }
+            let snapshot_texture = self.game_snapshot.as_ref().map(|s| s.texture.clone());
+            if let Some(texture) = snapshot_texture {
+                let sw = screen_width();
+                let sh = screen_height();
+                self.blur_pipeline.apply(&texture, sw, sh);
+                draw_rectangle(0.0, 0.0, sw, sh, MODAL_SCRIM_COLOR);
+            }
+        } else if self.state == AppState::Playing {
             if let Some(session) = &self.current_session {
-                self.render_grid_background(session);
-                self.render_blocks(session, frame_state.hovered_blocks);
+                App::draw_grid_background(session);
+                App::draw_blocks(&self.sprite_sheet, session, &frame_state.hovered_blocks);
             }
         }
 
@@ -280,9 +303,37 @@ impl App {
         self.window_chrome.render(self.ui.body_font());
     }
 
+    fn take_game_snapshot(&mut self) {
+        let sw = screen_width();
+        let sh = screen_height();
+        let rt = render_target(sw as u32, sh as u32);
+        rt.texture.set_filter(FilterMode::Linear);
+
+        set_camera(&Camera2D {
+            render_target: Some(rt.clone()),
+            zoom: vec2(2.0 / sw, -2.0 / sh),
+            target: vec2(sw / 2.0, sh / 2.0),
+            ..Default::default()
+        });
+        clear_background(BACKGROUND_COLOR);
+
+        if let Some(session) = &self.current_session {
+            App::draw_grid_background(session);
+            App::draw_blocks(&self.sprite_sheet, session, &HashSet::new());
+        }
+
+        set_default_camera();
+        self.game_snapshot = Some(rt);
+    }
+
     pub fn set_state(&mut self, state: AppState) {
         if self.state == AppState::GameOver && state == AppState::MainMenu {
             self.current_session = None;
+            self.game_snapshot = None;
+        }
+
+        if state == AppState::GameOver {
+            self.game_snapshot = None;
         }
 
         self.state = state;
@@ -296,7 +347,7 @@ impl App {
         );
     }
 
-    fn render_grid_background(&self, session: &GameSession) {
+    fn draw_grid_background(session: &GameSession) {
         draw_rounded_rect(
             session.layout.x() - CONTAINER_INNER_PADDING,
             session.layout.y() - CONTAINER_INNER_PADDING,
@@ -307,7 +358,11 @@ impl App {
         );
     }
 
-    fn render_blocks(&self, session: &GameSession, hovered_blocks: HashSet<Coordinate>) {
+    fn draw_blocks(
+        sprite_sheet: &SpriteSheet,
+        session: &GameSession,
+        hovered_blocks: &HashSet<Coordinate>,
+    ) {
         let block_size = session.layout.block_size;
         let half_gap = BLOCK_GAP / 2.0;
         let render_size = block_size - BLOCK_GAP;
@@ -343,7 +398,8 @@ impl App {
                     };
                     let world_pos = session.layout.grid_to_world(position);
                     let anim_offset = session.physics_system.get_animation_offset(position);
-                    self.render_block(
+                    App::draw_block(
+                        sprite_sheet,
                         block,
                         block_state,
                         world_pos + vec2(half_gap, half_gap) + anim_offset,
@@ -354,7 +410,13 @@ impl App {
         }
     }
 
-    fn render_block(&self, block: &Block, state: BlockState, position: Vec2, size: f32) {
+    fn draw_block(
+        sprite_sheet: &SpriteSheet,
+        block: &Block,
+        state: BlockState,
+        position: Vec2,
+        size: f32,
+    ) {
         let darken = match state {
             BlockState::Default => 1.0,
             BlockState::Hover => 0.6,
@@ -396,7 +458,7 @@ impl App {
             inner_bottom_r,
             fill_color,
         );
-        self.sprite_sheet.render_sprite(
+        sprite_sheet.render_sprite(
             block.block_type.get_sprite_id(),
             position,
             size,

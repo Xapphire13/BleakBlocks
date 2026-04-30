@@ -58,4 +58,8 @@ pub mod ui {
     pub const CHROME_MINIMIZE_COLOR: Color = Color::from_hex(0xFEBC2E);
     pub const CHROME_ZOOM_COLOR: Color = Color::from_hex(0x28C840);
     pub const CHROME_BUTTON_INACTIVE_COLOR: Color = Color::from_hex(0x4E3F63);
+
+    pub const MODAL_SCRIM_COLOR: Color = Color::new(0.0, 0.0, 0.0, 0.35);
+    pub const MODAL_SHADOW_COLOR: Color = Color::new(0.0, 0.0, 0.0, 0.5);
+    pub const MODAL_PADDING: f32 = 24.0;
 }

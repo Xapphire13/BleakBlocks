@@ -94,7 +94,9 @@ impl GameUi {
             AppState::Playing => {
                 ScreenLayout::Playing(PlayingLayout::compute(&self.title_font, &self.body_font))
             }
-            AppState::GameOver => ScreenLayout::GameOver(GameOverLayout::compute(&self.title_font)),
+            AppState::GameOver => {
+                ScreenLayout::GameOver(GameOverLayout::compute(&self.title_font, &self.body_font))
+            }
             AppState::MainMenu => {
                 ScreenLayout::MainMenu(MainMenuLayout::compute(&self.title_font, is_existing_game))
             }
