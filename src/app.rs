@@ -23,7 +23,7 @@ use crate::{
             EMPTY_BLOCK_COLOR, GRID_BACKGROUND_COLOR,
         },
         ui::{
-            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP, CHROME_HEIGHT,
+            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP,
             CONTAINER_INNER_PADDING, CORNER_RADIUS, MODAL_SCRIM_COLOR, WINDOW_PADDING,
         },
     },
@@ -37,6 +37,7 @@ use crate::{
     high_scores::HighScores,
     orientation::Orientation,
     physics_system::PhysicsSystem,
+    platform::top_inset,
     sprite_sheet::SpriteSheet,
 };
 
@@ -69,7 +70,14 @@ impl App {
         let app_state = AppState::MainMenu;
         let grid_size = GridSize::default();
         let difficulty = Difficulty::default();
-        let orientation = Orientation::default();
+        // Default to whatever orientation matches the actual window/screen shape.
+        // On macOS this just picks the starting shape before the window is resized
+        // to fit; on iOS the screen can't be resized, so this must match reality.
+        let orientation = if screen_height() > screen_width() {
+            Orientation::Portrait
+        } else {
+            Orientation::Landscape
+        };
         let ui = GameUi::new();
         let panel_h = compute_status_panel_height(ui.title_font(), ui.body_font());
         let (rows, cols) = grid_size.grid_dims(orientation);
@@ -100,7 +108,7 @@ impl App {
 
         if self.state == AppState::Playing {
             if let Some(session) = &self.current_session {
-                if is_mouse_button_pressed(MouseButton::Left) && my >= CHROME_HEIGHT {
+                if is_mouse_button_pressed(MouseButton::Left) && my >= top_inset() {
                     input_event = InputEvent::BlockClicked(mouse_position().into());
                 } else if let Some(position) = session.layout.world_to_grid(mouse_position().into())
                 {
@@ -519,7 +527,7 @@ fn compute_grid_rect(
 ) -> (Vec2, Vec2) {
     let panel_y = screen_h - status_panel_h;
     let container_x = WINDOW_PADDING.x;
-    let container_y = CHROME_HEIGHT + WINDOW_PADDING.y;
+    let container_y = top_inset() + WINDOW_PADDING.y;
     let container_w = screen_w - WINDOW_PADDING.x * 2.0;
     let container_h = panel_y - WINDOW_PADDING.y - container_y;
     let available_w = container_w - CONTAINER_INNER_PADDING * 2.0;

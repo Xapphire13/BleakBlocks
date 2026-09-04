@@ -19,6 +19,7 @@ mod grid_size;
 mod high_scores;
 mod orientation;
 mod physics_system;
+mod platform;
 mod sprite_sheet;
 mod window_chrome;
 

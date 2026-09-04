@@ -8,11 +8,12 @@ use num_format::{Locale, ToFormattedString};
 use crate::constants::{
     style::BACKGROUND_COLOR,
     ui::{
-        BODY_TEXT_SIZE, BUTTON_PADDING, CARD_BORDER_COLOR, CHROME_HEIGHT, CORNER_RADIUS,
-        MODAL_PADDING, MODAL_SHADOW_COLOR, TEXT_COLOR, TITLE_TEXT_SIZE,
+        BODY_TEXT_SIZE, BUTTON_PADDING, CARD_BORDER_COLOR, CORNER_RADIUS, MODAL_PADDING,
+        MODAL_SHADOW_COLOR, TEXT_COLOR, TITLE_TEXT_SIZE,
     },
 };
 use crate::drawing::draw_rounded_rect;
+use crate::platform::top_inset;
 
 use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
@@ -37,7 +38,8 @@ impl GameOverLayout {
         let modal_h = content_h + MODAL_PADDING * 2.0;
         let modal_w = (screen_w * 0.6).max(280.0).min(400.0);
         let modal_x = (screen_w - modal_w) / 2.0;
-        let modal_y = CHROME_HEIGHT + (screen_h - CHROME_HEIGHT - modal_h) / 2.0;
+        let top = top_inset();
+        let modal_y = top + (screen_h - top - modal_h) / 2.0;
 
         let btn_anchor_y = modal_y + modal_h - MODAL_PADDING;
         let buttons = compute_button_stack(

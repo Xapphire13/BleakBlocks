@@ -8,13 +8,14 @@ use crate::{
     constants::{
         style::BLOCK_INSET,
         ui::{
-            BODY_TEXT_SIZE, BUTTON_PADDING, CHROME_HEIGHT, LABEL_TEXT_COLOR, LABEL_TEXT_SIZE,
-            TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING,
+            BODY_TEXT_SIZE, BUTTON_PADDING, LABEL_TEXT_COLOR, LABEL_TEXT_SIZE, TEXT_COLOR,
+            TITLE_TEXT_SIZE, WINDOW_PADDING,
         },
     },
     difficulty::Difficulty,
     grid_size::GridSize,
     orientation::Orientation,
+    platform::top_inset,
 };
 
 use super::super::Fonts;
@@ -40,7 +41,7 @@ impl SettingsLayout {
         let btn_gap = WINDOW_PADDING.x;
 
         let title_dims = measure_text("Settings", Some(title_font), TITLE_TEXT_SIZE, 1.0);
-        let mut current_y = CHROME_HEIGHT + WINDOW_PADDING.y + title_dims.height + 16.0;
+        let mut current_y = top_inset() + WINDOW_PADDING.y + title_dims.height + 16.0;
 
         let gs_label_dims = measure_text("A", Some(body_font), LABEL_TEXT_SIZE, 1.0);
         let grid_size_label_y = current_y;
@@ -167,7 +168,7 @@ impl SettingsLayout {
         draw_text_ex(
             text,
             (screen_width() - dims.width) / 2.0,
-            CHROME_HEIGHT + WINDOW_PADDING.y + dims.height,
+            top_inset() + WINDOW_PADDING.y + dims.height,
             TextParams {
                 font_size: TITLE_TEXT_SIZE,
                 color: TEXT_COLOR,

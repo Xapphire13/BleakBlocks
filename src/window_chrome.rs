@@ -157,6 +157,10 @@ impl WindowChrome {
         }
     }
 
+    #[cfg(not(target_os = "macos"))]
+    pub fn handle_input(&mut self, _constrain_resize: bool) {}
+
+    #[cfg(target_os = "macos")]
     pub fn handle_input(&mut self, constrain_resize: bool) {
         if !self.initialized {
             self.setup_platform_window();
@@ -252,6 +256,10 @@ impl WindowChrome {
         }
     }
 
+    #[cfg(not(target_os = "macos"))]
+    pub fn render(&self, _body_font: &Font) {}
+
+    #[cfg(target_os = "macos")]
     pub fn render(&self, body_font: &Font) {
         let sw = screen_width();
         let sh = screen_height();
