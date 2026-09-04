@@ -2,7 +2,7 @@ use macroquad::text::{Font, TextParams, draw_text_ex, measure_text};
 use macroquad::window::screen_width;
 
 use crate::constants::ui::{TEXT_COLOR, TITLE_TEXT_SIZE, WINDOW_PADDING};
-use crate::platform::top_inset;
+use crate::platform::{scale, scale_font, top_inset};
 
 use super::super::Fonts;
 use super::super::buttons::{Button, ButtonId, ButtonStyle};
@@ -25,19 +25,20 @@ impl MainMenuLayout {
         items.push(("High scores", ButtonId::HighScores, ButtonStyle::Secondary));
 
         Self {
-            buttons: compute_button_stack(title_font, &items, top_inset() + 125.0),
+            buttons: compute_button_stack(title_font, &items, top_inset() + scale(125.0)),
         }
     }
 
     pub fn render(&self, fonts: Fonts) {
         let text = "Bleak Blocks";
-        let dims = measure_text(text, Some(fonts.title), TITLE_TEXT_SIZE, 1.0);
+        let font_size = scale_font(TITLE_TEXT_SIZE);
+        let dims = measure_text(text, Some(fonts.title), font_size, 1.0);
         draw_text_ex(
             text,
             (screen_width() - dims.width) / 2.0,
-            top_inset() + WINDOW_PADDING.y + dims.height,
+            top_inset() + scale(WINDOW_PADDING.y) + dims.height,
             TextParams {
-                font_size: TITLE_TEXT_SIZE,
+                font_size,
                 color: TEXT_COLOR,
                 font: Some(fonts.title),
                 ..Default::default()

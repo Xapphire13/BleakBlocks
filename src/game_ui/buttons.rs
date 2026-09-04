@@ -18,6 +18,7 @@ use crate::{
     drawing::draw_rounded_rect,
     grid_size::GridSize,
     orientation::Orientation,
+    platform::{scale, scale_font},
 };
 
 #[derive(PartialEq, Clone)]
@@ -112,14 +113,15 @@ impl Button {
             fill_color
         };
 
-        let face_h = self.bounds.h - BLOCK_INSET;
+        let corner_radius = scale(CORNER_RADIUS);
+        let face_h = self.bounds.h - scale(BLOCK_INSET);
 
         draw_rounded_rect(
             self.bounds.x,
             self.bounds.y,
             self.bounds.w,
             self.bounds.h,
-            CORNER_RADIUS,
+            corner_radius,
             shadow_color,
         );
         draw_rounded_rect(
@@ -127,7 +129,7 @@ impl Button {
             self.bounds.y,
             self.bounds.w,
             face_h,
-            CORNER_RADIUS,
+            corner_radius,
             border_color,
         );
         draw_rounded_rect(
@@ -135,7 +137,7 @@ impl Button {
             self.bounds.y + 1.0,
             self.bounds.w - 2.0,
             face_h - 2.0,
-            CORNER_RADIUS - 1.0,
+            corner_radius - 1.0,
             fill,
         );
 
@@ -147,7 +149,8 @@ impl Button {
             ..
         } = &self.style
         {
-            let total_text_h = self.label_dimensions.height + 4.0 + sub_dims.height;
+            let label_gap = scale(4.0);
+            let total_text_h = self.label_dimensions.height + label_gap + sub_dims.height;
             let text_top = self.bounds.y + (face_h - total_text_h) / 2.0;
             draw_text_ex(
                 &self.label,
@@ -163,9 +166,9 @@ impl Button {
             draw_text_ex(
                 sub_label,
                 center_x - sub_dims.width / 2.0,
-                text_top + self.label_dimensions.height + 4.0 + sub_dims.offset_y,
+                text_top + self.label_dimensions.height + label_gap + sub_dims.offset_y,
                 TextParams {
-                    font_size: LABEL_TEXT_SIZE,
+                    font_size: scale_font(LABEL_TEXT_SIZE),
                     color: TEXT_COLOR,
                     font: Some(fonts.body),
                     ..Default::default()

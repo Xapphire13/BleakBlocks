@@ -16,6 +16,7 @@ use crate::{
         },
     },
     drawing::draw_rounded_rect,
+    platform::{scale, scale_font},
 };
 
 use super::super::Fonts;
@@ -27,27 +28,30 @@ pub struct PlayingLayout {
 }
 
 pub fn compute_status_panel_height(title_font: &Font, body_font: &Font) -> f32 {
-    let label_dims = measure_text("A", Some(body_font), BODY_TEXT_SIZE, 1.0);
-    let value_dims = measure_text("A", Some(title_font), LABEL_VALUE_SIZE, 1.0);
-    WINDOW_PADDING.y * 2.0
-        + CONTAINER_INNER_PADDING * 2.0
+    let label_dims = measure_text("A", Some(body_font), scale_font(BODY_TEXT_SIZE), 1.0);
+    let value_dims = measure_text("A", Some(title_font), scale_font(LABEL_VALUE_SIZE), 1.0);
+    scale(WINDOW_PADDING.y) * 2.0
+        + scale(CONTAINER_INNER_PADDING) * 2.0
         + label_dims.height
-        + LABEL_VALUE_GAP
+        + scale(LABEL_VALUE_GAP)
         + value_dims.height
 }
 
 impl PlayingLayout {
     pub fn compute(title_font: &Font, body_font: &Font) -> Self {
         let status_panel_height = compute_status_panel_height(title_font, body_font);
+        let window_padding_x = scale(WINDOW_PADDING.x);
+        let window_padding_y = scale(WINDOW_PADDING.y);
 
         let panel_y = screen_height() - status_panel_height;
-        let card_h = status_panel_height - WINDOW_PADDING.y * 2.0;
+        let card_h = status_panel_height - window_padding_y * 2.0;
         let pause_label = "||";
-        let pause_dims = measure_text(pause_label, Some(title_font), PAUSE_ICON_SIZE, 1.0);
+        let pause_font_size = scale_font(PAUSE_ICON_SIZE);
+        let pause_dims = measure_text(pause_label, Some(title_font), pause_font_size, 1.0);
         let btn_w = card_h;
-        let btn_h = card_h + BLOCK_INSET;
-        let btn_x = screen_width() - WINDOW_PADDING.x - btn_w;
-        let btn_y = panel_y + WINDOW_PADDING.y;
+        let btn_h = card_h + scale(BLOCK_INSET);
+        let btn_x = screen_width() - window_padding_x - btn_w;
+        let btn_y = panel_y + window_padding_y;
 
         Self {
             status_panel_height,
@@ -56,7 +60,7 @@ impl PlayingLayout {
                 Rect::new(btn_x, btn_y, btn_w, btn_h),
                 pause_label.to_string(),
                 pause_dims,
-                PAUSE_ICON_SIZE,
+                pause_font_size,
                 ButtonStyle::Secondary,
             )],
         }
@@ -66,6 +70,8 @@ impl PlayingLayout {
         let screen_w = screen_width();
         let screen_h = screen_height();
         let panel_y = screen_h - self.status_panel_height;
+        let window_padding_x = scale(WINDOW_PADDING.x);
+        let window_padding_y = scale(WINDOW_PADDING.y);
 
         draw_rectangle(
             0.0,
@@ -75,14 +81,14 @@ impl PlayingLayout {
             GRID_BACKGROUND_COLOR,
         );
 
-        let card_y = panel_y + WINDOW_PADDING.y;
-        let card_h = self.status_panel_height - WINDOW_PADDING.y * 2.0;
+        let card_y = panel_y + window_padding_y;
+        let card_h = self.status_panel_height - window_padding_y * 2.0;
         let pause_btn_size = card_h;
-        let pause_btn_x = screen_w - WINDOW_PADDING.x - pause_btn_size;
-        let cards_end = pause_btn_x - WINDOW_PADDING.x;
-        let card_w = (cards_end - WINDOW_PADDING.x - WINDOW_PADDING.x) / 2.0;
+        let pause_btn_x = screen_w - window_padding_x - pause_btn_size;
+        let cards_end = pause_btn_x - window_padding_x;
+        let card_w = (cards_end - window_padding_x - window_padding_x) / 2.0;
 
-        let mut card_x = WINDOW_PADDING.x;
+        let mut card_x = window_padding_x;
         card_x = render_datum_card(
             fonts.title,
             fonts.body,
@@ -93,7 +99,7 @@ impl PlayingLayout {
             "Blocks left",
             &blocks_remaining.to_formatted_string(&Locale::en),
         );
-        card_x += WINDOW_PADDING.x;
+        card_x += window_padding_x;
         render_datum_card(
             fonts.title,
             fonts.body,
@@ -117,40 +123,48 @@ fn render_datum_card(
     label: &str,
     value: &str,
 ) -> f32 {
-    let label_upper = label.to_uppercase();
-    let label_dims = measure_text(&label_upper, Some(body_font), LABEL_TEXT_SIZE, 1.0);
-    let value_dims = measure_text(value, Some(title_font), LABEL_VALUE_SIZE, 1.0);
+    let container_inner_padding = scale(CONTAINER_INNER_PADDING);
+    let label_font_size = scale_font(LABEL_TEXT_SIZE);
+    let value_font_size = scale_font(LABEL_VALUE_SIZE);
 
-    draw_rounded_rect(x, y, w, h, CORNER_RADIUS, CARD_BORDER_COLOR);
+    let label_upper = label.to_uppercase();
+    let label_dims = measure_text(&label_upper, Some(body_font), label_font_size, 1.0);
+    let value_dims = measure_text(value, Some(title_font), value_font_size, 1.0);
+
+    let corner_radius = scale(CORNER_RADIUS);
+    draw_rounded_rect(x, y, w, h, corner_radius, CARD_BORDER_COLOR);
     draw_rounded_rect(
         x + 1.0,
         y + 1.0,
         w - 2.0,
         h - 2.0,
-        CORNER_RADIUS - 1.0,
+        corner_radius - 1.0,
         BACKGROUND_COLOR,
     );
 
     draw_text_ex(
         &label_upper,
-        x + CONTAINER_INNER_PADDING,
-        y + CONTAINER_INNER_PADDING + label_dims.offset_y,
+        x + container_inner_padding,
+        y + container_inner_padding + label_dims.offset_y,
         TextParams {
-            font_size: LABEL_TEXT_SIZE,
+            font_size: label_font_size,
             color: LABEL_TEXT_COLOR,
             font: Some(body_font),
             ..Default::default()
         },
     );
 
-    let value_y =
-        y + CONTAINER_INNER_PADDING + label_dims.height + LABEL_VALUE_GAP + value_dims.offset_y;
+    let value_y = y
+        + container_inner_padding
+        + label_dims.height
+        + scale(LABEL_VALUE_GAP)
+        + value_dims.offset_y;
     draw_text_ex(
         value,
-        x + CONTAINER_INNER_PADDING,
+        x + container_inner_padding,
         value_y,
         TextParams {
-            font_size: LABEL_VALUE_SIZE,
+            font_size: value_font_size,
             color: TEXT_COLOR,
             font: Some(title_font),
             ..Default::default()

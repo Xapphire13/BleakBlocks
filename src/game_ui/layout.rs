@@ -10,9 +10,12 @@ use macroquad::{
     window::screen_width,
 };
 
-use crate::constants::{
-    style::BLOCK_INSET,
-    ui::{BODY_TEXT_SIZE, BUTTON_PADDING},
+use crate::{
+    constants::{
+        style::BLOCK_INSET,
+        ui::{BODY_TEXT_SIZE, BUTTON_PADDING},
+    },
+    platform::{scale, scale_font},
 };
 
 use super::Fonts;
@@ -72,14 +75,20 @@ pub fn compute_button_stack(
     items: &[(&str, ButtonId, ButtonStyle)],
     start_y: f32,
 ) -> Vec<Button> {
+    let font_size = scale_font(BODY_TEXT_SIZE);
+    let button_padding = scale(BUTTON_PADDING.x);
+    let button_padding_y = scale(BUTTON_PADDING.y);
+    let block_inset = scale(BLOCK_INSET);
+    let gap = scale(8.0);
+
     let measurements: Vec<TextDimensions> = items
         .iter()
-        .map(|(text, _, _)| measure_text(text, Some(title_font), BODY_TEXT_SIZE, 1.0))
+        .map(|(text, _, _)| measure_text(text, Some(title_font), font_size, 1.0))
         .collect();
 
     let max_btn_w = measurements
         .iter()
-        .map(|d| d.width + 2.0 * BUTTON_PADDING.x)
+        .map(|d| d.width + 2.0 * button_padding)
         .fold(0.0f32, f32::max);
 
     let center_x = screen_width() / 2.0;
@@ -88,22 +97,22 @@ pub fn compute_button_stack(
 
     for (item, dims) in items.iter().zip(measurements.iter()) {
         let (text, id, style): &(&str, ButtonId, ButtonStyle) = item;
-        let face_h = dims.height + 2.0 * BUTTON_PADDING.y;
+        let face_h = dims.height + 2.0 * button_padding_y;
         let bounds = Rect::new(
             center_x - max_btn_w / 2.0,
-            y - dims.offset_y - BUTTON_PADDING.y,
+            y - dims.offset_y - button_padding_y,
             max_btn_w,
-            face_h + BLOCK_INSET,
+            face_h + block_inset,
         );
         buttons.push(Button::new(
             id.clone(),
             bounds,
             text.to_string(),
             *dims,
-            BODY_TEXT_SIZE,
+            font_size,
             style.clone(),
         ));
-        y += face_h + BLOCK_INSET + 8.0;
+        y += face_h + block_inset + gap;
     }
 
     buttons

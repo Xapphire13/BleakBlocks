@@ -16,7 +16,7 @@ use crate::{
     difficulty::Difficulty,
     grid_size::GridSize,
     high_scores::HighScores,
-    platform::top_inset,
+    platform::{scale, scale_font, top_inset},
 };
 
 use super::super::Fonts;
@@ -44,34 +44,45 @@ impl HighScoresLayout {
         difficulty: Difficulty,
         high_scores: &HighScores,
     ) -> Self {
-        let available_w = screen_width() - 2.0 * WINDOW_PADDING.x;
-        let btn_gap = WINDOW_PADDING.x;
+        let window_padding_x = scale(WINDOW_PADDING.x);
+        let button_padding_y = scale(BUTTON_PADDING.y);
+        let block_inset = scale(BLOCK_INSET);
+        let body_font_size = scale_font(BODY_TEXT_SIZE);
+        let label_font_size = scale_font(LABEL_TEXT_SIZE);
 
-        let title_dims = measure_text("High Scores", Some(title_font), TITLE_TEXT_SIZE, 1.0);
-        let mut current_y = top_inset() + WINDOW_PADDING.y + title_dims.height + 16.0;
+        let available_w = screen_width() - 2.0 * window_padding_x;
+        let btn_gap = window_padding_x;
+
+        let title_dims = measure_text(
+            "High Scores",
+            Some(title_font),
+            scale_font(TITLE_TEXT_SIZE),
+            1.0,
+        );
+        let mut current_y = top_inset() + scale(WINDOW_PADDING.y) + title_dims.height + scale(16.0);
 
         // Difficulty filter row
-        let label_a_dims = measure_text("A", Some(body_font), LABEL_TEXT_SIZE, 1.0);
+        let label_a_dims = measure_text("A", Some(body_font), label_font_size, 1.0);
         let difficulty_label_y = current_y;
-        current_y += label_a_dims.height + 8.0;
+        current_y += label_a_dims.height + scale(8.0);
 
         let diff_btn_w = (available_w - 2.0 * btn_gap) / 3.0;
-        let diff_main_dims = measure_text("Normal", Some(title_font), BODY_TEXT_SIZE, 1.0);
-        let diff_face_h = BUTTON_PADDING.y + diff_main_dims.height + BUTTON_PADDING.y;
-        let diff_btn_h = diff_face_h + BLOCK_INSET;
+        let diff_main_dims = measure_text("Normal", Some(title_font), body_font_size, 1.0);
+        let diff_face_h = button_padding_y + diff_main_dims.height + button_padding_y;
+        let diff_btn_h = diff_face_h + block_inset;
 
         let mut buttons = Vec::new();
         let diff_variants = [Difficulty::Easy, Difficulty::Normal, Difficulty::Hard];
         for (i, diff) in diff_variants.iter().enumerate() {
-            let x = WINDOW_PADDING.x + i as f32 * (diff_btn_w + btn_gap);
+            let x = window_padding_x + i as f32 * (diff_btn_w + btn_gap);
             let label = diff.label().to_string();
-            let label_dims = measure_text(&label, Some(title_font), BODY_TEXT_SIZE, 1.0);
+            let label_dims = measure_text(&label, Some(title_font), body_font_size, 1.0);
             buttons.push(Button::new(
                 ButtonId::SetDifficulty(*diff),
                 Rect::new(x, current_y, diff_btn_w, diff_btn_h),
                 label,
                 label_dims,
-                BODY_TEXT_SIZE,
+                body_font_size,
                 ButtonStyle::Toggle {
                     is_selected: *diff == difficulty,
                     sub_label: None,
@@ -82,8 +93,8 @@ impl HighScoresLayout {
         current_y += diff_btn_h;
 
         // One section per grid size
-        let score_row_dims = measure_text("A", Some(body_font), BODY_TEXT_SIZE, 1.0);
-        let score_row_height = score_row_dims.height + 6.0;
+        let score_row_dims = measure_text("A", Some(body_font), body_font_size, 1.0);
+        let score_row_height = score_row_dims.height + scale(6.0);
 
         let gs_variants = [
             GridSize::Small,
@@ -93,9 +104,9 @@ impl HighScoresLayout {
         ];
         let mut sections = Vec::new();
         for gs in gs_variants {
-            current_y += 20.0;
+            current_y += scale(20.0);
             let label_y = current_y;
-            current_y += label_a_dims.height + 8.0;
+            current_y += label_a_dims.height + scale(8.0);
             let scores_start_y = current_y;
 
             let entries: Vec<u32> = high_scores
@@ -115,9 +126,9 @@ impl HighScoresLayout {
         }
 
         // Back button
-        current_y += 24.0;
-        let back_dims = measure_text("Back", Some(title_font), BODY_TEXT_SIZE, 1.0);
-        let back_baseline = current_y + back_dims.offset_y + BUTTON_PADDING.y;
+        current_y += scale(24.0);
+        let back_dims = measure_text("Back", Some(title_font), body_font_size, 1.0);
+        let back_baseline = current_y + back_dims.offset_y + button_padding_y;
         buttons.extend(compute_button_stack(
             title_font,
             &[("Back", ButtonId::Back, ButtonStyle::Secondary)],
@@ -133,43 +144,48 @@ impl HighScoresLayout {
     }
 
     pub fn render(&self, fonts: Fonts) {
+        let window_padding_x = scale(WINDOW_PADDING.x);
+        let body_font_size = scale_font(BODY_TEXT_SIZE);
+        let label_font_size = scale_font(LABEL_TEXT_SIZE);
+
         let text = "High Scores";
-        let dims = measure_text(text, Some(fonts.title), TITLE_TEXT_SIZE, 1.0);
+        let title_font_size = scale_font(TITLE_TEXT_SIZE);
+        let dims = measure_text(text, Some(fonts.title), title_font_size, 1.0);
         draw_text_ex(
             text,
             (screen_width() - dims.width) / 2.0,
-            top_inset() + WINDOW_PADDING.y + dims.height,
+            top_inset() + scale(WINDOW_PADDING.y) + dims.height,
             TextParams {
-                font_size: TITLE_TEXT_SIZE,
+                font_size: title_font_size,
                 color: TEXT_COLOR,
                 font: Some(fonts.title),
                 ..Default::default()
             },
         );
 
-        let label_a_dims = measure_text("A", Some(fonts.body), LABEL_TEXT_SIZE, 1.0);
+        let label_a_dims = measure_text("A", Some(fonts.body), label_font_size, 1.0);
 
         draw_text_ex(
             "DIFFICULTY",
-            WINDOW_PADDING.x,
+            window_padding_x,
             self.difficulty_label_y + label_a_dims.offset_y,
             TextParams {
-                font_size: LABEL_TEXT_SIZE,
+                font_size: label_font_size,
                 color: LABEL_TEXT_COLOR,
                 font: Some(fonts.body),
                 ..Default::default()
             },
         );
 
-        let score_a_dims = measure_text("A", Some(fonts.body), BODY_TEXT_SIZE, 1.0);
+        let score_a_dims = measure_text("A", Some(fonts.body), body_font_size, 1.0);
 
         for section in &self.sections {
             draw_text_ex(
                 &section.label,
-                WINDOW_PADDING.x,
+                window_padding_x,
                 section.label_y + label_a_dims.offset_y,
                 TextParams {
-                    font_size: LABEL_TEXT_SIZE,
+                    font_size: label_font_size,
                     color: LABEL_TEXT_COLOR,
                     font: Some(fonts.body),
                     ..Default::default()
@@ -179,10 +195,10 @@ impl HighScoresLayout {
             if section.entries.is_empty() {
                 draw_text_ex(
                     "No scores yet",
-                    WINDOW_PADDING.x,
+                    window_padding_x,
                     section.scores_start_y + score_a_dims.offset_y,
                     TextParams {
-                        font_size: BODY_TEXT_SIZE,
+                        font_size: body_font_size,
                         color: LABEL_TEXT_COLOR,
                         font: Some(fonts.body),
                         ..Default::default()
@@ -196,10 +212,10 @@ impl HighScoresLayout {
                         + score_a_dims.offset_y;
                     draw_text_ex(
                         &row_text,
-                        WINDOW_PADDING.x,
+                        window_padding_x,
                         y,
                         TextParams {
-                            font_size: BODY_TEXT_SIZE,
+                            font_size: body_font_size,
                             color: TEXT_COLOR,
                             font: Some(fonts.body),
                             ..Default::default()

@@ -23,8 +23,8 @@ use crate::{
             EMPTY_BLOCK_COLOR, GRID_BACKGROUND_COLOR,
         },
         ui::{
-            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP,
-            CONTAINER_INNER_PADDING, CORNER_RADIUS, MODAL_SCRIM_COLOR, WINDOW_PADDING,
+            BLOCK_CORNER_RADIUS_FACTOR, BLOCK_DETAIL_FULL_SIZE, BLOCK_GAP, CONTAINER_INNER_PADDING,
+            CORNER_RADIUS, MODAL_SCRIM_COLOR, WINDOW_PADDING,
         },
     },
     coordinate::{Coordinate, coordinate},
@@ -37,7 +37,7 @@ use crate::{
     high_scores::HighScores,
     orientation::Orientation,
     physics_system::PhysicsSystem,
-    platform::top_inset,
+    platform::{scale, top_inset},
     sprite_sheet::SpriteSheet,
 };
 
@@ -356,12 +356,13 @@ impl App {
     }
 
     fn draw_grid_background(session: &GameSession) {
+        let container_inner_padding = scale(CONTAINER_INNER_PADDING);
         draw_rounded_rect(
-            session.layout.x() - CONTAINER_INNER_PADDING,
-            session.layout.y() - CONTAINER_INNER_PADDING,
-            session.layout.width() + CONTAINER_INNER_PADDING * 2.0,
-            session.layout.height() + CONTAINER_INNER_PADDING * 2.0,
-            CORNER_RADIUS,
+            session.layout.x() - container_inner_padding,
+            session.layout.y() - container_inner_padding,
+            session.layout.width() + container_inner_padding * 2.0,
+            session.layout.height() + container_inner_padding * 2.0,
+            scale(CORNER_RADIUS),
             GRID_BACKGROUND_COLOR,
         );
     }
@@ -525,13 +526,17 @@ fn compute_grid_rect(
     rows: u32,
     cols: u32,
 ) -> (Vec2, Vec2) {
+    let window_padding_x = scale(WINDOW_PADDING.x);
+    let window_padding_y = scale(WINDOW_PADDING.y);
+    let container_inner_padding = scale(CONTAINER_INNER_PADDING);
+
     let panel_y = screen_h - status_panel_h;
-    let container_x = WINDOW_PADDING.x;
-    let container_y = top_inset() + WINDOW_PADDING.y;
-    let container_w = screen_w - WINDOW_PADDING.x * 2.0;
-    let container_h = panel_y - WINDOW_PADDING.y - container_y;
-    let available_w = container_w - CONTAINER_INNER_PADDING * 2.0;
-    let available_h = container_h - CONTAINER_INNER_PADDING * 2.0;
+    let container_x = window_padding_x;
+    let container_y = top_inset() + window_padding_y;
+    let container_w = screen_w - window_padding_x * 2.0;
+    let container_h = panel_y - window_padding_y - container_y;
+    let available_w = container_w - container_inner_padding * 2.0;
+    let available_h = container_h - container_inner_padding * 2.0;
     let block_size = (available_w / cols as f32).min(available_h / rows as f32);
     let grid_w = cols as f32 * block_size;
     let grid_h = rows as f32 * block_size;
