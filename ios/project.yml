@@ -1,0 +1,45 @@
+name: BleakBlocks
+options:
+  bundleIdPrefix: com.xapphire13
+settings:
+  base:
+    DEVELOPMENT_TEAM: 67DD8T44HB
+    CODE_SIGN_STYLE: Automatic
+targets:
+  BleakBlocks:
+    type: application
+    platform: iOS
+    deploymentTarget: "13.0"
+    sources:
+      - Stub
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Bleak Blocks
+        UILaunchStoryboardName: ""
+        UIRequiredDeviceCapabilities: [arm64]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xapphire13.bleak-blocks
+        PRODUCT_NAME: BleakBlocks
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+    postbuildScripts:
+      - name: Build Rust binary
+        script: |
+          set -e
+          cd "$SRCROOT/.."
+          CARGO_BIN=$HOME/.cargo/bin/cargo
+          "$CARGO_BIN" build --target aarch64-apple-ios --release
+          cp "target/aarch64-apple-ios/release/bleak-blocks" "$BUILT_PRODUCTS_DIR/$EXECUTABLE_PATH"
+        basedOnDependencyAnalysis: false
+schemes:
+  BleakBlocks:
+    build:
+      targets:
+        BleakBlocks: all
+    run:
+      config: Debug
+    archive:
+      config: Release
